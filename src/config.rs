@@ -1,8 +1,8 @@
 //! Two pieces of persisted state:
 //!  - `GlobalConfig` lives in the Windows registry under
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
-//!  - `LocalConfig` lives at `%APPDATA%\SSM\config.yaml` and tracks
-//!    SSM-specific preferences (last selection, prevent-sleep).
+//!  - `LocalConfig` lives at `%APPDATA%\ssm\config.yaml` and tracks
+//!    ssm-specific preferences (last selection, prevent-sleep).
 
 use std::path::PathBuf;
 
@@ -10,7 +10,7 @@ use winreg::RegKey;
 use winreg::enums::*;
 
 const REG_DESKTOP: &str = if cfg!(test) {
-    "Software\\SSM\\TestDesktop"
+    "Software\\ssm\\TestDesktop"
 } else {
     "Control Panel\\Desktop"
 };
@@ -82,6 +82,7 @@ pub struct LocalConfig {
     pub prevent_sleep: bool,
     /// Hidden/advanced setting for power users to customize the random cycle interval (in seconds).
     pub random_cycle_secs: u32,
+    pub selected_paths: Vec<String>,
 }
 
 impl Default for LocalConfig {
@@ -90,6 +91,7 @@ impl Default for LocalConfig {
             last_selected: None,
             prevent_sleep: false,
             random_cycle_secs: 30,
+            selected_paths: Vec::new(),
         }
     }
 }
@@ -97,7 +99,7 @@ impl Default for LocalConfig {
 impl LocalConfig {
     pub fn config_path() -> Option<PathBuf> {
         let appdata = std::env::var("APPDATA").ok()?;
-        Some(PathBuf::from(appdata).join("SSM").join("config.yaml"))
+        Some(PathBuf::from(appdata).join("ssm").join("config.yaml"))
     }
 
     pub fn load() -> Self {
@@ -117,6 +119,12 @@ impl LocalConfig {
                 if let Ok(secs) = v.trim().parse::<u32>() {
                     out.random_cycle_secs = secs;
                 }
+            } else if let Some(v) = line.strip_prefix("selected_paths: ") {
+                out.selected_paths = v
+                    .split(';')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
             }
         }
         out
@@ -130,14 +138,18 @@ impl LocalConfig {
             std::fs::create_dir_all(parent)?;
         }
         let content = format!(
-            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\n",
+            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\n",
             self.last_selected.as_deref().unwrap_or(""),
             self.prevent_sleep,
             self.random_cycle_secs,
+            self.selected_paths.join(";"),
         );
         std::fs::write(path, content)
     }
 }
+
+#[cfg(test)]
+pub(crate) static TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[cfg(test)]
 mod tests {
@@ -145,6 +157,7 @@ mod tests {
 
     #[test]
     fn test_local_config_roundtrip() {
+        let _lock = TEST_LOCK.lock().unwrap();
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
             "ssm_test_{}",
@@ -164,6 +177,10 @@ mod tests {
             last_selected: Some("mystify.scr".to_string()),
             prevent_sleep: true,
             random_cycle_secs: 45,
+            selected_paths: vec![
+                "C:\\Windows\\System32\\mystify.scr".to_string(),
+                "C:\\Windows\\System32\\bubbles.scr".to_string(),
+            ],
         };
 
         // Save
@@ -174,6 +191,13 @@ mod tests {
         assert_eq!(loaded.last_selected.as_deref(), Some("mystify.scr"));
         assert!(loaded.prevent_sleep);
         assert_eq!(loaded.random_cycle_secs, 45);
+        assert_eq!(
+            loaded.selected_paths,
+            vec![
+                "C:\\Windows\\System32\\mystify.scr".to_string(),
+                "C:\\Windows\\System32\\bubbles.scr".to_string(),
+            ]
+        );
 
         // Clean up temp dir
         let _ = std::fs::remove_dir_all(&temp_dir);
@@ -181,7 +205,8 @@ mod tests {
 
     #[test]
     fn test_global_config_roundtrip() {
-        // REG_DESKTOP is redirected to "Software\SSM\TestDesktop" in test mode
+        let _lock = TEST_LOCK.lock().unwrap();
+        // REG_DESKTOP is redirected to "Software\ssm\TestDesktop" in test mode
         let config = GlobalConfig {
             active_scr: "C:\\Windows\\System32\\bubbles.scr".to_string(),
             active: true,
@@ -198,6 +223,6 @@ mod tests {
         assert_eq!(loaded.timeout, 300);
 
         // Clean up test key in registry
-        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\SSM\\TestDesktop");
+        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\ssm\\TestDesktop");
     }
 }

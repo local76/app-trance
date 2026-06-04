@@ -399,11 +399,11 @@ fn run_doctor() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nDiscovery Directories:");
     if let Ok(appdata) = std::env::var("APPDATA") {
         let ssm_dir = std::path::PathBuf::from(appdata)
-            .join("SSM")
+            .join("ssm")
             .join("screensavers");
         let exists = ssm_dir.exists();
         println!(
-            "  - %APPDATA%/SSM/screensavers: {}",
+            "  - %APPDATA%/ssm/screensavers: {}",
             if exists { "EXISTS" } else { "NOT FOUND" }
         );
     }

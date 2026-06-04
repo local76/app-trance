@@ -22,6 +22,10 @@ const TIMEOUT_STEP_SECS: u32 = 60;
 const TIMEOUT_MIN_SECS: u32 = 60;
 const TIMEOUT_MAX_SECS: u32 = 7200;
 
+const CYCLE_TIME_STEP_SECS: u32 = 5;
+const CYCLE_TIME_MIN_SECS: u32 = 5;
+const CYCLE_TIME_MAX_SECS: u32 = 600;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FocusedSection {
     GlobalPrefs,
@@ -33,13 +37,15 @@ pub enum GlobalField {
     Active,
     Timeout,
     PreventSleep,
+    CycleTime,
 }
 
 impl GlobalField {
-    pub const ALL: [GlobalField; 3] = [
+    pub const ALL: [GlobalField; 4] = [
         GlobalField::Active,
         GlobalField::Timeout,
         GlobalField::PreventSleep,
+        GlobalField::CycleTime,
     ];
 }
 
@@ -152,6 +158,7 @@ impl App {
             .file_name()
             .and_then(|f| f.to_str())
             .map(str::to_lowercase);
+        let exe = std::env::current_exe().unwrap_or_default();
 
         self.list_items = self
             .screensavers
@@ -165,14 +172,37 @@ impl App {
                     .as_ref()
                     == active_filename.as_ref();
                 let exists = s.path.exists();
-                let mut spans = vec![ratatui::text::Span::styled(
-                    format!("{:<22}", crate::ui::truncate(&s.name, 22)),
-                    ratatui::style::Style::default().fg(if is_applied {
-                        theme.text_main
+
+                let is_self = s.path == exe;
+                let prefix = if is_self {
+                    "    ".to_string()
+                } else {
+                    let is_checked = self.local.selected_paths.contains(&s.path.to_string_lossy().into_owned());
+                    if is_checked {
+                        "[x] ".to_string()
                     } else {
-                        theme.text_dim
-                    }),
-                )];
+                        "[ ] ".to_string()
+                    }
+                };
+
+                let mut spans = vec![
+                    ratatui::text::Span::styled(
+                        prefix,
+                        ratatui::style::Style::default().fg(if is_applied {
+                            theme.text_main
+                        } else {
+                            theme.text_dim
+                        }),
+                    ),
+                    ratatui::text::Span::styled(
+                        format!("{:<22}", crate::ui::truncate(&s.name, 22)),
+                        ratatui::style::Style::default().fg(if is_applied {
+                            theme.text_main
+                        } else {
+                            theme.text_dim
+                        }),
+                    )
+                ];
                 if is_applied {
                     spans.push(ratatui::text::Span::styled(
                         " [Applied]",
@@ -195,14 +225,56 @@ impl App {
 
     /// Apply the currently-highlighted screensaver as the system screensaver.
     pub fn apply_highlighted(&mut self) {
-        let Some(s) = self.screensavers.get(self.highlighted) else {
+        let exe = std::env::current_exe().unwrap_or_default();
+        let current_is_cycle = self.current_screensaver()
+            .map(|s| s.path == exe)
+            .unwrap_or(false);
+
+        // If selected_paths is empty and they didn't highlight the Random Cycle itself,
+        // automatically check the highlighted screensaver.
+        if self.local.selected_paths.is_empty() && !current_is_cycle {
+            if let Some(s) = self.current_screensaver() {
+                self.local.selected_paths.push(s.path.to_string_lossy().into_owned());
+            }
+        }
+
+        // Decide what to write to the registry based on selected_paths
+        let count = self.local.selected_paths.len();
+        if count > 1 || (count == 0 && current_is_cycle) {
+            self.global.active_scr = exe.to_string_lossy().into_owned();
+            if count > 1 {
+                self.status = Some(StatusMessage {
+                    text: format!("Applied cycle of {} screensavers", count),
+                    kind: StatusKind::Info,
+                });
+            } else {
+                self.status = Some(StatusMessage {
+                    text: "Applied Random Cycle (all screensavers)".to_string(),
+                    kind: StatusKind::Info,
+                });
+            }
+        } else if count == 1 {
+            let path = self.local.selected_paths[0].clone();
+            self.global.active_scr = path.clone();
+
+            // Find the name of the screensaver for the status message
+            let name = self.screensavers.iter()
+                .find(|s| s.path.to_string_lossy() == path)
+                .map(|s| s.name.clone())
+                .unwrap_or_else(|| "Selected Screensaver".to_string());
+
             self.status = Some(StatusMessage {
-                text: "No screensaver selected.".into(),
+                text: format!("Applied: {}", name),
+                kind: StatusKind::Info,
+            });
+        } else {
+            self.status = Some(StatusMessage {
+                text: "No screensavers selected to apply.".into(),
                 kind: StatusKind::Error,
             });
             return;
-        };
-        self.global.active_scr = s.path.to_string_lossy().into_owned();
+        }
+
         if let Err(e) = self.global.save() {
             self.status = Some(StatusMessage {
                 text: format!("Failed to save: {e}"),
@@ -210,14 +282,13 @@ impl App {
             });
             return;
         }
-        if let Some(name) = s.path.file_name().and_then(|f| f.to_str()) {
-            self.local.last_selected = Some(name.to_string());
-            let _ = self.local.save();
+
+        if let Some(s) = self.current_screensaver() {
+            if let Some(name) = s.path.file_name().and_then(|f| f.to_str()) {
+                self.local.last_selected = Some(name.to_string());
+            }
         }
-        self.status = Some(StatusMessage {
-            text: format!("Applied: {}", s.name),
-            kind: StatusKind::Info,
-        });
+        let _ = self.local.save();
         self.update_list_items();
     }
 
@@ -281,6 +352,22 @@ impl App {
         }
     }
 
+    /// Adjust the screensaver cycle time by one step.
+    pub fn adjust_cycle_time(&mut self, delta: i32) {
+        let next = (self.local.random_cycle_secs as i32 + delta * CYCLE_TIME_STEP_SECS as i32)
+            .clamp(CYCLE_TIME_MIN_SECS as i32, CYCLE_TIME_MAX_SECS as i32) as u32;
+        if next == self.local.random_cycle_secs {
+            return;
+        }
+        self.local.random_cycle_secs = next;
+        if let Err(e) = self.local.save() {
+            self.status = Some(StatusMessage {
+                text: format!("Save failed: {e}"),
+                kind: StatusKind::Error,
+            });
+        }
+    }
+
     /// Re-discover screensavers and refresh the list.
     pub fn refresh_screensavers(&mut self) {
         let mut list = Vec::new();
@@ -334,6 +421,40 @@ impl App {
                 kind: StatusKind::Info,
             });
         }
+    }
+
+    /// Toggle selection of the highlighted screensaver for custom cycling.
+    pub fn toggle_highlighted_selection(&mut self) {
+        let (path_str, name) = {
+            let Some(s) = self.current_screensaver() else {
+                return;
+            };
+            let exe = std::env::current_exe().unwrap_or_default();
+            if s.path == exe {
+                self.status = Some(StatusMessage {
+                    text: "Cannot select 'Random Cycle' for cycling.".to_string(),
+                    kind: StatusKind::Error,
+                });
+                return;
+            }
+            (s.path.to_string_lossy().into_owned(), s.name.clone())
+        };
+
+        if let Some(pos) = self.local.selected_paths.iter().position(|p| p == &path_str) {
+            self.local.selected_paths.remove(pos);
+            self.status = Some(StatusMessage {
+                text: format!("Deselected: {}", name),
+                kind: StatusKind::Info,
+            });
+        } else {
+            self.local.selected_paths.push(path_str);
+            self.status = Some(StatusMessage {
+                text: format!("Selected: {}", name),
+                kind: StatusKind::Info,
+            });
+        }
+        let _ = self.local.save();
+        self.update_list_items();
     }
 
     /// Adjust the highlight in the saver list, clamping to bounds.
@@ -407,7 +528,7 @@ impl App {
                 KeyCode::Up => {
                     self.move_focus(-1);
                 }
-                KeyCode::Enter | KeyCode::Char(' ') => {
+                KeyCode::Enter => {
                     self.on_activate();
                 }
                 KeyCode::Tab | KeyCode::BackTab => {
@@ -433,7 +554,14 @@ impl App {
             KeyCode::Down => self.move_focus(1),
             KeyCode::Left => self.on_left(),
             KeyCode::Right => self.on_right(),
-            KeyCode::Char(' ') | KeyCode::Enter => self.on_activate(),
+            KeyCode::Char(' ') => {
+                if self.focused == FocusedSection::SaverList {
+                    self.toggle_highlighted_selection();
+                } else {
+                    self.on_activate();
+                }
+            }
+            KeyCode::Enter => self.on_activate(),
             KeyCode::Char('p') | KeyCode::Char('P') | KeyCode::Char('t') | KeyCode::Char('T') => {
                 self.preview_highlighted()
             }
@@ -444,16 +572,22 @@ impl App {
     }
 
     fn on_left(&mut self) {
-        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout
-        {
-            self.adjust_timeout(-1);
+        if self.focused == FocusedSection::GlobalPrefs {
+            match self.global_field {
+                GlobalField::Timeout => self.adjust_timeout(-1),
+                GlobalField::CycleTime => self.adjust_cycle_time(-1),
+                _ => {}
+            }
         }
     }
 
     fn on_right(&mut self) {
-        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout
-        {
-            self.adjust_timeout(1);
+        if self.focused == FocusedSection::GlobalPrefs {
+            match self.global_field {
+                GlobalField::Timeout => self.adjust_timeout(1),
+                GlobalField::CycleTime => self.adjust_cycle_time(1),
+                _ => {}
+            }
         }
     }
 
@@ -462,7 +596,7 @@ impl App {
             FocusedSection::GlobalPrefs => match self.global_field {
                 GlobalField::Active => self.toggle_active(),
                 GlobalField::PreventSleep => self.toggle_prevent_sleep(),
-                GlobalField::Timeout => {}
+                GlobalField::Timeout | GlobalField::CycleTime => {}
             },
             FocusedSection::SaverList => self.apply_highlighted(),
         }
@@ -481,20 +615,28 @@ pub fn random_cycle_entry() -> Option<Screensaver> {
 
 /// Convenience: kick off the random cycle and return when it finishes.
 pub fn run_random_cycle() {
+    let local_config = LocalConfig::load();
     let discovered = crate::preview::discover();
     let exe = std::env::current_exe().ok();
 
-    let candidates: Vec<PathBuf> = discovered
-        .into_iter()
-        .map(|s| s.path)
-        .filter(|p| !is_self(p, exe.as_ref()) && !is_uninstall(p))
-        .collect();
+    let candidates: Vec<PathBuf> = if !local_config.selected_paths.is_empty() {
+        local_config.selected_paths
+            .iter()
+            .map(PathBuf::from)
+            .filter(|p| p.exists() && !is_self(p, exe.as_ref()) && !is_uninstall(p))
+            .collect()
+    } else {
+        discovered
+            .into_iter()
+            .map(|s| s.path)
+            .filter(|p| !is_self(p, exe.as_ref()) && !is_uninstall(p))
+            .collect()
+    };
 
     if candidates.is_empty() {
         return;
     }
 
-    let local_config = LocalConfig::load();
     let cycle_duration = std::time::Duration::from_secs(local_config.random_cycle_secs as u64);
 
     let mut seed: u64 = std::time::SystemTime::now()
@@ -616,6 +758,10 @@ mod tests {
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
         assert_eq!(app.global_field, GlobalField::PreventSleep);
 
+        // Move down to CycleTime
+        app.handle_key(KeyCode::Down, KeyModifiers::empty());
+        assert_eq!(app.global_field, GlobalField::CycleTime);
+
         // Tab cycles focus to SaverList
         app.handle_key(KeyCode::Tab, KeyModifiers::empty());
         assert_eq!(app.focused, FocusedSection::SaverList);
@@ -624,5 +770,59 @@ mod tests {
         assert_eq!(app.highlighted, 0);
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
         assert_eq!(app.highlighted, 1);
+    }
+
+    #[test]
+    fn test_selection_and_apply() {
+        let _lock = crate::config::TEST_LOCK.lock().unwrap();
+
+        // Create a unique temp dir for the test to avoid collisions
+        let temp_dir = std::env::temp_dir().join(format!(
+            "ssm_test_app_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+        ));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        // Set APPDATA to redirect LocalConfig load/save
+        unsafe {
+            std::env::set_var("APPDATA", &temp_dir);
+        }
+
+        let mut app = mock_app();
+        assert!(app.local.selected_paths.is_empty());
+
+        // Focus SaverList
+        app.focused = FocusedSection::SaverList;
+
+        // Toggle selection on the first item (Bubbles)
+        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
+        assert_eq!(app.local.selected_paths.len(), 1);
+        assert_eq!(app.local.selected_paths[0], "C:\\Windows\\System32\\bubbles.scr");
+
+        // Toggle selection on the second item (Mystify)
+        app.highlighted = 1;
+        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
+        assert_eq!(app.local.selected_paths.len(), 2);
+        assert_eq!(app.local.selected_paths[1], "C:\\Windows\\System32\\mystify.scr");
+
+        // Hitting Enter on the list applies the multi-selection.
+        // It should set registry/global config active_scr to the path of ssm.exe itself.
+        app.handle_key(KeyCode::Enter, KeyModifiers::empty());
+        let exe = std::env::current_exe().unwrap_or_default();
+        assert_eq!(app.global.active_scr, exe.to_string_lossy().into_owned());
+
+        // Toggle second item again (uncheck Mystify)
+        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
+        assert_eq!(app.local.selected_paths.len(), 1);
+
+        // Apply again, should set global config active_scr to Bubbles directly
+        app.handle_key(KeyCode::Enter, KeyModifiers::empty());
+        assert_eq!(app.global.active_scr, "C:\\Windows\\System32\\bubbles.scr");
+
+        // Clean up temp dir
+        let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }

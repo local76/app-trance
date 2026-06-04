@@ -134,7 +134,7 @@ fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
             Constraint::Length(1), // active
             Constraint::Length(1), // timeout
             Constraint::Length(1), // prevent sleep
-            Constraint::Length(1), // applied
+            Constraint::Length(1), // cycle time
         ])
         .split(inner);
 
@@ -159,21 +159,7 @@ fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
         theme.text_dim
     };
     let timeout_value = format!("{} minutes", app.global.timeout / 60);
-    let (active_path, exists) = active_screensaver_info(app);
-    let applied_name = active_path
-        .file_name()
-        .and_then(|f| f.to_str())
-        .unwrap_or("(none)");
-    let applied_color = if exists {
-        theme.text_main
-    } else {
-        theme.missing
-    };
-    let applied_suffix = if !exists && !app.global.active_scr.is_empty() {
-        Span::styled("  (missing)", Style::default().fg(theme.missing))
-    } else {
-        Span::raw("")
-    };
+    let cycle_time_value = format!("{} seconds", app.local.random_cycle_secs);
 
     let mut field_row =
         |row: Rect, field: GlobalField, label: &'static str, value: String, value_color| {
@@ -218,20 +204,13 @@ fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
         sleep_status.to_string(),
         sleep_color,
     );
-
-    let applied_line = Line::from(vec![
-        Span::styled("    ", Style::default()),
-        Span::styled("Applied:        ", Style::default().fg(theme.text_dim)),
-        Span::styled(applied_name, Style::default().fg(applied_color)),
-        applied_suffix,
-    ]);
-    frame.render_widget(Paragraph::new(applied_line), rows[3]);
-}
-
-fn active_screensaver_info(app: &App) -> (std::path::PathBuf, bool) {
-    let path = std::path::PathBuf::from(&app.global.active_scr);
-    let exists = app.screensavers.iter().any(|s| s.path == path) || path.exists();
-    (path, exists)
+    field_row(
+        rows[3],
+        GlobalField::CycleTime,
+        "Cycle time:     ",
+        cycle_time_value,
+        theme.accent_primary,
+    );
 }
 
 fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -239,7 +218,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
     let active = app.focused == FocusedSection::SaverList;
     let title = if app.filtering {
         Line::from(vec![
-            Span::styled(" Screen Savers ", Style::default().fg(theme.header)),
+            Span::styled(" Screen Saver Preferences ", Style::default().fg(theme.header)),
             Span::styled("— Filter: ", Style::default().fg(theme.text_dim)),
             Span::styled(
                 &app.filter,
@@ -257,7 +236,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
         ])
     } else if !app.filter.is_empty() {
         Line::from(vec![
-            Span::styled(" Screen Savers ", Style::default().fg(theme.header)),
+            Span::styled(" Screen Saver Preferences ", Style::default().fg(theme.header)),
             Span::styled("— Filter: ", Style::default().fg(theme.text_dim)),
             Span::styled(&app.filter, Style::default().fg(theme.accent_secondary)),
             Span::styled(
@@ -267,7 +246,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
         ])
     } else {
         Line::from(vec![
-            Span::styled(" Screen Savers ", Style::default().fg(theme.header)),
+            Span::styled(" Screen Saver Preferences ", Style::default().fg(theme.header)),
             Span::styled(
                 "— Press [/] to filter ",
                 Style::default().fg(theme.text_dim),
@@ -292,7 +271,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
             vec![
                 Line::from("No .scr files found."),
                 Line::from(Span::styled(
-                    "Drop one into %APPDATA%\\SSM\\screensavers",
+                    "Drop one into %APPDATA%\\ssm\\screensavers",
                     Style::default().fg(theme.text_dim),
                 )),
             ]
@@ -372,20 +351,20 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
             Span::raw("adjust timeout"),
         ]),
         Line::from(vec![
-            Span::styled("[Space/⏎] ", Style::default().fg(theme.accent_primary)),
-            Span::raw("toggle / apply"),
+            Span::styled("[Space]   ", Style::default().fg(theme.accent_primary)),
+            Span::raw("toggle select / preference"),
+        ]),
+        Line::from(vec![
+            Span::styled("[Enter]   ", Style::default().fg(theme.accent_primary)),
+            Span::raw("apply selection / highlight"),
         ]),
         Line::from(vec![
             Span::styled("[F5 / R]  ", Style::default().fg(theme.accent_primary)),
             Span::raw("refresh list"),
         ]),
         Line::from(vec![
-            Span::styled("[P]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("preview"),
-        ]),
-        Line::from(vec![
-            Span::styled("[C]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("configure settings"),
+            Span::styled("[P / C]   ", Style::default().fg(theme.accent_primary)),
+            Span::raw("preview / configure"),
         ]),
         Line::from(vec![
             Span::styled("[q / Esc] ", Style::default().fg(theme.accent_primary)),

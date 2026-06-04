@@ -68,9 +68,9 @@ Navigate and configure your preferences dynamically using the keyboard:
 ## File & Configuration Paths
 
 * **System Preferences**: Read and written to standard registry values under `HKCU\Control Panel\Desktop` (`SCRNSAVE.EXE`, `ScreenSaveActive`, `ScreenSaveTimeOut`).
-* **SSM Custom Preferences**: Stored at `%APPDATA%\SSM\config.yaml` (contains last-selected screensaver and prevent-sleep status).
-* **Screensaver Drop Path**: Put custom `.scr` screensavers in `%APPDATA%\SSM\screensavers` to have SSM discover them.
-* **Logs File**: Diagnostics are written to `%APPDATA%\SSM\ssm.log` so they do not clutter raw terminal outputs.
+* **SSM Custom Preferences**: Stored at `%APPDATA%\ssm\config.yaml` (contains last-selected screensaver and prevent-sleep status).
+* **Screensaver Drop Path**: Put custom `.scr` screensavers in `%APPDATA%\ssm\screensavers` to have SSM discover them.
+* **Logs File**: Diagnostics are written to `%APPDATA%\ssm\ssm.log` so they do not clutter raw terminal outputs.
 
 ---
 
