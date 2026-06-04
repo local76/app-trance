@@ -21,8 +21,8 @@ use crate::app::{App, FocusedSection, GlobalField};
 
 const STATUS_TTL_EVENTS: u32 = 30; // about 7.5s at 250ms poll
 
-/// Number of rows reserved for the help block (2 borders + 8 content lines).
-const HELP_ROWS: u16 = 10;
+/// Number of rows reserved for the help block (2 borders + 9 content lines).
+const HELP_ROWS: u16 = 11;
 /// Number of rows reserved for the global-prefs block (2 borders + 4 content
 /// lines + 1 padding).
 const PREFS_ROWS: u16 = 7;
@@ -53,6 +53,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     render_prefs(app, frame, outer[1]);
     render_list(app, frame, outer[2]);
     render_help(theme, frame, outer[3]);
+
+    if app.vanity_enabled {
+        render_vanity_particles(app, frame);
+    }
 }
 
 fn render_too_small(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
@@ -348,7 +352,7 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("[←/→]     ", Style::default().fg(theme.accent_primary)),
-            Span::raw("adjust timeout"),
+            Span::raw("adjust timeout / cycle duration"),
         ]),
         Line::from(vec![
             Span::styled("[Space]   ", Style::default().fg(theme.accent_primary)),
@@ -365,6 +369,10 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("[P / C]   ", Style::default().fg(theme.accent_primary)),
             Span::raw("preview / configure"),
+        ]),
+        Line::from(vec![
+            Span::styled("[V]       ", Style::default().fg(theme.accent_primary)),
+            Span::raw("toggle vanity mode"),
         ]),
         Line::from(vec![
             Span::styled("[q / Esc] ", Style::default().fg(theme.accent_primary)),
@@ -387,4 +395,31 @@ pub fn truncate(s: &str, max: usize) -> String {
 /// Clear the status message after `STATUS_TTL_EVENTS` have elapsed.
 pub fn status_ttl_events() -> u32 {
     STATUS_TTL_EVENTS
+}
+
+fn render_vanity_particles(app: &App, frame: &mut Frame) {
+    let theme = app.theme;
+    let colors = [
+        theme.accent_primary,
+        theme.accent_secondary,
+        theme.applied,
+        theme.text_main,
+        theme.text_dim,
+    ];
+    let buffer = frame.buffer_mut();
+    let width = buffer.area.width;
+    let height = buffer.area.height;
+
+    for p in &app.particles {
+        let x = p.x.round() as i16;
+        let y = p.y.round() as i16;
+        if x >= 0 && x < width as i16 && y >= 0 && y < height as i16 {
+            let cell = &mut buffer[(x as u16, y as u16)];
+            if cell.symbol() == " " {
+                cell.set_symbol(p.symbol);
+                let color = colors[p.color_idx % colors.len()];
+                cell.set_fg(color);
+            }
+        }
+    }
 }

@@ -234,6 +234,9 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
             last_sleep_prevented = app.local.prevent_sleep;
         }
 
+        let term_size = terminal.size().unwrap_or_default();
+        app.update_particles(term_size.width, term_size.height);
+
         terminal.draw(|f| ui::render(&mut app, f))?;
 
         if event::poll(poll)? {

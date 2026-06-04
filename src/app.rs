@@ -78,6 +78,8 @@ pub struct App {
     pub list_offset: usize,
     /// Cached list items for rendering the screensavers list.
     pub list_items: Vec<ratatui::widgets::ListItem<'static>>,
+    pub vanity_enabled: bool,
+    pub particles: Vec<Particle>,
 }
 
 impl App {
@@ -112,6 +114,8 @@ impl App {
             filtering: false,
             list_offset: 0,
             list_items: Vec::new(),
+            vanity_enabled: true,
+            particles: Vec::new(),
         };
         app.update_list_items();
         app
@@ -566,6 +570,13 @@ impl App {
                 self.preview_highlighted()
             }
             KeyCode::Char('c') | KeyCode::Char('C') => self.configure_highlighted(),
+            KeyCode::Char('v') | KeyCode::Char('V') => {
+                self.vanity_enabled = !self.vanity_enabled;
+                self.status = Some(StatusMessage {
+                    text: format!("Vanity Mode: {}", if self.vanity_enabled { "ON" } else { "OFF" }),
+                    kind: StatusKind::Info,
+                });
+            }
             _ => {}
         }
         self.should_quit
@@ -686,6 +697,77 @@ fn is_uninstall(p: &std::path::Path) -> bool {
         .map(str::to_lowercase)
         .map(|n| n.contains("uninstall"))
         .unwrap_or(false)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Particle {
+    pub x: f64,
+    pub y: f64,
+    pub vx: f64,
+    pub vy: f64,
+    pub symbol: &'static str,
+    pub age: u32,
+    pub max_age: u32,
+    pub color_idx: usize,
+}
+
+impl App {
+    /// Update drifting particle physics for the TUI vanity background
+    pub fn update_particles(&mut self, width: u16, height: u16) {
+        if !self.vanity_enabled {
+            self.particles.clear();
+            return;
+        }
+
+        // Advance existing particles
+        let mut seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0);
+
+        self.particles.retain_mut(|p| {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.age += 1;
+            p.age < p.max_age && p.x >= 0.0 && p.x < width as f64 && p.y >= 0.0 && p.y < height as f64
+        });
+
+        // Spawn new particles if below count
+        let max_particles = 25;
+        let symbols = ["✦", "✧", "*", "+", ".", "°", "o"];
+
+        while self.particles.len() < max_particles {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let x = (seed % (width.max(1) as u64)) as f64;
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let y = (seed % (height.max(1) as u64)) as f64;
+
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let vx = ((seed % 200) as f64 - 100.0) / 100.0 * 0.4;
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let vy = ((seed % 200) as f64 - 100.0) / 100.0 * 0.15;
+
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let symbol_idx = (seed as usize) % symbols.len();
+
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let max_age = 15 + (seed % 15) as u32;
+
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            let color_idx = (seed as usize) % 5;
+
+            self.particles.push(Particle {
+                x,
+                y,
+                vx,
+                vy,
+                symbol: symbols[symbol_idx],
+                age: 0,
+                max_age,
+                color_idx,
+            });
+        }
+    }
 }
 
 #[cfg(test)]
