@@ -10,7 +10,7 @@ pub struct Screensaver {
 
 pub fn discover() -> Vec<Screensaver> {
     let mut list = Vec::new();
-    let mut seen: Vec<PathBuf> = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
 
     for dir in search_dirs() {
         let entries = match std::fs::read_dir(&dir) {
@@ -31,16 +31,16 @@ pub fn discover() -> Vec<Screensaver> {
             {
                 continue;
             }
-            // Dedup by lowercase full path; we don't need canonicalize()'s
-            // UNC prefixes for matching.
-            let key = path.to_string_lossy().to_lowercase();
-            if seen
-                .iter()
-                .any(|p| p.to_string_lossy().to_lowercase() == key)
-            {
+            // Dedup by lowercase filename (e.g. bubbles.scr) to prevent duplicate
+            // listings of stock screensavers present in both System32 and SysWOW64.
+            let filename = match path.file_name() {
+                Some(f) => f.to_string_lossy().to_lowercase(),
+                None => continue,
+            };
+            if seen.contains(&filename) {
                 continue;
             }
-            seen.push(path.clone());
+            seen.push(filename);
 
             let name = prettify(&path);
             list.push(Screensaver { name, path });
