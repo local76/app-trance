@@ -426,7 +426,7 @@ impl App {
         match code {
             KeyCode::Char('q') | KeyCode::Esc => return true,
             KeyCode::Char('/') => self.filtering = true,
-            KeyCode::F(5) => self.refresh_screensavers(),
+            KeyCode::F(5) | KeyCode::Char('r') | KeyCode::Char('R') => self.refresh_screensavers(),
             KeyCode::Tab => self.cycle_focus(),
             KeyCode::BackTab => self.cycle_focus(),
             KeyCode::Up => self.move_focus(-1),

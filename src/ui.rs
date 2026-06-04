@@ -376,7 +376,7 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
             Span::raw("toggle / apply"),
         ]),
         Line::from(vec![
-            Span::styled("[F5]      ", Style::default().fg(theme.accent_primary)),
+            Span::styled("[F5 / R]  ", Style::default().fg(theme.accent_primary)),
             Span::raw("refresh list"),
         ]),
         Line::from(vec![

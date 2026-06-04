@@ -59,7 +59,7 @@ Navigate and configure your preferences dynamically using the keyboard:
 | **`← / →`** | Adjust Screensaver Timeout |
 | **`Space / Enter`** | Toggle preferences (Active state, Prevent sleep) or apply the highlighted screensaver |
 | **`/`** | Open filter search input (type to filter screensavers, press `Esc` to clear) |
-| **`F5`** | Re-scan the system and `%APPDATA%` directories for new screensavers |
+| **`F5`** / **`R`** | Re-scan the system and `%APPDATA%` directories for new screensavers |
 | **`P`** | Launch a full-screen preview of the highlighted screensaver |
 | **`q / Esc`** | Quit SSM |
 
