@@ -23,6 +23,7 @@ A lightweight, modern Windows Screen Saver Management TUI dashboard built in Rus
 * **Mini-Preview Support**: Transparently forwards `/p <HWND>` commands to child screensaver processes so they display in the Windows settings dialog.
 * **Sleep Inhibition**: Temporarily keeps the display/system awake with `SetThreadExecutionState` when activated in preferences.
 * **Color Harmonization**: Automatically query Windows high-contrast state, active accent colors, dark mode, and console palettes to dynamically style the TUI to match your OS context.
+* **Vanity Mode**: Toggle retro terminal firework animations on demand (off by default, toggled via `V`) that explode whenever selection preferences are modified.
 
 ---
 
@@ -62,6 +63,7 @@ Navigate and configure your preferences dynamically using the keyboard:
 | **`/`** | Open filter search input (type to filter screensavers, press `Esc` to clear) |
 | **`F5`** / **`R`** | Re-scan the system and `%APPDATA%` directories for new screensavers |
 | **`P`** | Launch a full-screen preview of the highlighted screensaver |
+| **`V`** | Toggle Vanity Mode (off by default; displays interactive fireworks upon selection/apply) |
 | **`q / Esc`** | Quit SSM |
 
 ---

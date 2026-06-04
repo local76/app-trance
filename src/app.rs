@@ -80,6 +80,8 @@ pub struct App {
     pub list_items: Vec<ratatui::widgets::ListItem<'static>>,
     pub vanity_enabled: bool,
     pub particles: Vec<Particle>,
+    pub term_width: u16,
+    pub term_height: u16,
 }
 
 impl App {
@@ -114,8 +116,10 @@ impl App {
             filtering: false,
             list_offset: 0,
             list_items: Vec::new(),
-            vanity_enabled: true,
+            vanity_enabled: false,
             particles: Vec::new(),
+            term_width: 80,
+            term_height: 25,
         };
         app.update_list_items();
         app
@@ -293,6 +297,7 @@ impl App {
             }
         }
         let _ = self.local.save();
+        self.trigger_firework();
         self.update_list_items();
     }
 
@@ -458,6 +463,7 @@ impl App {
             });
         }
         let _ = self.local.save();
+        self.trigger_firework();
         self.update_list_items();
     }
 
@@ -700,6 +706,12 @@ fn is_uninstall(p: &std::path::Path) -> bool {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum ParticlePhase {
+    Ascent,
+    Explosion,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Particle {
     pub x: f64,
     pub y: f64,
@@ -709,64 +721,111 @@ pub struct Particle {
     pub age: u32,
     pub max_age: u32,
     pub color_idx: usize,
+    pub phase: ParticlePhase,
 }
 
 impl App {
-    /// Update drifting particle physics for the TUI vanity background
+    /// Trigger a firework launch from the bottom center of the terminal.
+    pub fn trigger_firework(&mut self) {
+        if !self.vanity_enabled {
+            return;
+        }
+        let width = self.term_width;
+        let height = self.term_height;
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_micros() as u64)
+            .unwrap_or(0);
+
+        let start_x = (width / 2) as f64 + ((seed % 30) as f64 - 15.0);
+        let start_y = height.saturating_sub(1) as f64;
+
+        // Calculate height target in the top 15% to 30% of the terminal.
+        let target_y = (height as f64 * 0.15).max(2.0) + (seed % 4) as f64;
+        let dist = (start_y - target_y).max(1.0);
+        let vy: f64 = -1.2; // Launch upwards
+        let max_age = (dist / vy.abs()).round() as u32;
+
+        self.particles.push(Particle {
+            x: start_x,
+            y: start_y,
+            vx: 0.0,
+            vy,
+            symbol: "▲",
+            age: 0,
+            max_age,
+            color_idx: (seed % 5) as usize,
+            phase: ParticlePhase::Ascent,
+        });
+    }
+
+    /// Update TUI fireworks particle simulation physics
     pub fn update_particles(&mut self, width: u16, height: u16) {
+        self.term_width = width;
+        self.term_height = height;
+
         if !self.vanity_enabled {
             self.particles.clear();
             return;
         }
 
-        // Advance existing particles
+        let mut next_particles = Vec::new();
         let mut seed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_micros() as u64)
             .unwrap_or(0);
 
-        self.particles.retain_mut(|p| {
+        for mut p in self.particles.drain(..) {
             p.x += p.vx;
             p.y += p.vy;
             p.age += 1;
-            p.age < p.max_age && p.x >= 0.0 && p.x < width as f64 && p.y >= 0.0 && p.y < height as f64
-        });
 
-        // Spawn new particles if below count
-        let max_particles = 25;
-        let symbols = ["✦", "✧", "*", "+", ".", "°", "o"];
+            if p.x >= 0.0 && p.x < width as f64 && p.y >= 0.0 && p.y < height as f64 {
+                match p.phase {
+                    ParticlePhase::Ascent => {
+                        if p.age >= p.max_age {
+                            // Explode into a burst of sparkles!
+                            let symbols = ["✦", "✧", "*", "+", ".", "°", "o"];
+                            let count = 12 + (seed % 8) as usize;
+                            for i in 0..count {
+                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                                let angle = (i as f64 / count as f64) * 2.0 * std::f64::consts::PI;
+                                let speed = 0.5 + ((seed % 100) as f64 / 100.0) * 0.7;
+                                let vx = angle.cos() * speed;
+                                // Scale y-velocity slightly to accommodate rectangular terminal cell aspect ratio
+                                let vy = angle.sin() * speed * 0.45;
 
-        while self.particles.len() < max_particles {
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let x = (seed % (width.max(1) as u64)) as f64;
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let y = (seed % (height.max(1) as u64)) as f64;
+                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                                let symbol_idx = (seed as usize) % symbols.len();
+                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+                                let max_age = 6 + (seed % 6) as u32;
 
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let vx = ((seed % 200) as f64 - 100.0) / 100.0 * 0.4;
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let vy = ((seed % 200) as f64 - 100.0) / 100.0 * 0.15;
-
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let symbol_idx = (seed as usize) % symbols.len();
-
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let max_age = 15 + (seed % 15) as u32;
-
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let color_idx = (seed as usize) % 5;
-
-            self.particles.push(Particle {
-                x,
-                y,
-                vx,
-                vy,
-                symbol: symbols[symbol_idx],
-                age: 0,
-                max_age,
-                color_idx,
-            });
+                                next_particles.push(Particle {
+                                    x: p.x,
+                                    y: p.y,
+                                    vx,
+                                    vy,
+                                    symbol: symbols[symbol_idx],
+                                    age: 0,
+                                    max_age,
+                                    color_idx: p.color_idx,
+                                    phase: ParticlePhase::Explosion,
+                                });
+                            }
+                        } else {
+                            next_particles.push(p);
+                        }
+                    }
+                    ParticlePhase::Explosion => {
+                        p.vy += 0.04; // Gravity!
+                        if p.age < p.max_age {
+                            next_particles.push(p);
+                        }
+                    }
+                }
+            }
         }
+        self.particles = next_particles;
     }
 }
 
