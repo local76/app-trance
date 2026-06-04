@@ -444,13 +444,15 @@ impl App {
     }
 
     fn on_left(&mut self) {
-        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout {
+        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout
+        {
             self.adjust_timeout(-1);
         }
     }
 
     fn on_right(&mut self) {
-        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout {
+        if self.focused == FocusedSection::GlobalPrefs && self.global_field == GlobalField::Timeout
+        {
             self.adjust_timeout(1);
         }
     }

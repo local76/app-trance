@@ -60,6 +60,7 @@ fn search_dirs() -> Vec<PathBuf> {
 
     if let Ok(system_root) = std::env::var("SystemRoot") {
         let root = PathBuf::from(system_root);
+        dirs.push(root.clone());
         dirs.push(root.join("System32"));
         dirs.push(root.join("SysWOW64"));
     }

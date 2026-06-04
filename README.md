@@ -10,7 +10,6 @@ A lightweight, modern Windows Screen Saver Management TUI dashboard built in Rus
 |  ▶ Active:         ACTIVE                                      |
 |    Timeout:        10 minutes                                  |
 |    Prevent sleep:  DISABLED (NORMAL)                           |
-|    Cycle duration: 30 seconds                                  |
 |    Applied:        mystify.scr                                 |
 +================================================================+
 ```
@@ -57,7 +56,7 @@ Navigate and configure your preferences dynamically using the keyboard:
 | :--- | :--- |
 | **`Tab`** / **`BackTab`** | Cycle focus between **Global System Preferences** and **Screen Savers List** |
 | **`↑ / ↓`** | Navigate fields in preferences or entries in the screensaver list |
-| **`← / →`** | Adjust Screensaver Timeout or Random Cycle Duration |
+| **`← / →`** | Adjust Screensaver Timeout |
 | **`Space / Enter`** | Toggle preferences (Active state, Prevent sleep) or apply the highlighted screensaver |
 | **`/`** | Open filter search input (type to filter screensavers, press `Esc` to clear) |
 | **`F5`** | Re-scan the system and `%APPDATA%` directories for new screensavers |
@@ -69,7 +68,7 @@ Navigate and configure your preferences dynamically using the keyboard:
 ## File & Configuration Paths
 
 * **System Preferences**: Read and written to standard registry values under `HKCU\Control Panel\Desktop` (`SCRNSAVE.EXE`, `ScreenSaveActive`, `ScreenSaveTimeOut`).
-* **SSM Custom Preferences**: Stored at `%APPDATA%\SSM\config.yaml` (contains last-selected screensaver, prevent-sleep status, and random cycle duration).
+* **SSM Custom Preferences**: Stored at `%APPDATA%\SSM\config.yaml` (contains last-selected screensaver and prevent-sleep status).
 * **Screensaver Drop Path**: Put custom `.scr` screensavers in `%APPDATA%\SSM\screensavers` to have SSM discover them.
 * **Logs File**: Diagnostics are written to `%APPDATA%\SSM\ssm.log` so they do not clutter raw terminal outputs.
 

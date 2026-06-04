@@ -408,7 +408,16 @@ fn run_doctor() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
     if let Ok(sys_root) = std::env::var("SystemRoot") {
-        let sys32 = std::path::PathBuf::from(&sys_root).join("System32");
+        let root_path = std::path::PathBuf::from(&sys_root);
+        println!(
+            "  - SystemRoot:                {}",
+            if root_path.exists() {
+                "EXISTS"
+            } else {
+                "NOT FOUND"
+            }
+        );
+        let sys32 = root_path.join("System32");
         println!(
             "  - System32:                  {}",
             if sys32.exists() {
