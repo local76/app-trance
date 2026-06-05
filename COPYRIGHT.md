@@ -1,18 +1,18 @@
-# ⚖️ WSM Copyright Notice
+# ⚖️ rSaver Copyright Notice
 
 Copyright (c) 2026 Tourian Dynamics. All rights reserved.
 
-WSM (Windows Screensavers Manager) is authored by **UberMetroid** and distributed under the **MIT License**.
+rSaver (Windows Screensavers Manager) is authored by **UberMetroid** and distributed under the **MIT License**.
 
 ---
 
 ## 📄 License Reference
-The full terms of the license governing WSM can be found in the [LICENSE.md](LICENSE.md) file in this repository.
+The full terms of the license governing rSaver can be found in the [LICENSE.md](LICENSE.md) file in this repository.
 
 ---
 
 ## 📦 Third-Party Dependency Licenses
-WSM relies on several open-source libraries. Below is the attribution for the primary components compiled into the binary:
+rSaver relies on several open-source libraries. Below is the attribution for the primary components compiled into the binary:
 
 | Dependency | License | Copyright / Attribution |
 | :--- | :--- | :--- |

@@ -796,6 +796,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsav"
+version = "0.8.0"
+dependencies = [
+ "clap",
+ "crossterm",
+ "embed-resource",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "ureq",
+ "windows-sys 0.59.0",
+ "winreg",
+]
+
+[[package]]
 name = "rustc_version"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1585,24 +1603,6 @@ name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
-
-[[package]]
-name = "wsm"
-version = "0.8.0"
-dependencies = [
- "clap",
- "crossterm",
- "embed-resource",
- "ratatui",
- "serde",
- "serde_json",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "ureq",
- "windows-sys 0.59.0",
- "winreg",
-]
 
 [[package]]
 name = "yoke"

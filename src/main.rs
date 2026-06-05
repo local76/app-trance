@@ -1,4 +1,4 @@
-//! WSM — Windows Screensaver Manager.
+//! rSaver — Windows Screensaver Manager.
 //!
 //! Standalone TUI for configuring any Windows screensaver.
 
@@ -40,7 +40,7 @@ use crate::win32::BorderlessConsole;
 /// Screen saver management for Windows.
 #[derive(Parser, Debug)]
 #[command(
-    name = "wsm",
+    name = "rsav",
     version,
     about,
     long_about = None,
@@ -90,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = init_tracing();
     install_panic_hook();
     let cli = Cli::parse_from(pre_munge_args(std::env::args().collect()));
-    info!(?cli, "wsm start");
+    info!(?cli, "rsav start");
 
     let command = cli.command.unwrap_or(Command::Tui);
     let result: Result<(), Box<dyn std::error::Error>> = match command {
@@ -105,13 +105,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if let Err(ref e) = result {
-        error!(error = %e, "wsm failed");
+        error!(error = %e, "rsav failed");
     }
     result
 }
 
 /// Translate Windows `.scr` calling-convention flags (`/s`, `/c`, `/p`) into
-/// clap subcommand names so `wsm.exe /s` works the same as `wsm.exe run`.
+/// clap subcommand names so `rsav.exe /s` works the same as `rsav.exe run`.
 fn pre_munge_args(args: Vec<String>) -> Vec<String> {
     let mut args = args;
     if args.len() < 2 {
@@ -141,8 +141,8 @@ fn pre_munge_args(args: Vec<String>) -> Vec<String> {
 /// the TUI.
 fn init_tracing() -> WorkerGuard {
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("wsm.log")))
-        .unwrap_or_else(|| PathBuf::from("wsm.log"));
+        .and_then(|p| p.parent().map(|p| p.join("rSaver.log")))
+        .unwrap_or_else(|| PathBuf::from("rSaver.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -208,7 +208,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
         }
     };
 
-    let _title_guard = ConsoleTitleGuard::new("WSM — Windows Screensavers Manager");
+    let _title_guard = ConsoleTitleGuard::new("rSaver — Windows Screensavers Manager");
 
     let screensavers = preview::discover();
 
@@ -221,6 +221,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
 
     ratatui::crossterm::terminal::enable_raw_mode()?;
     let mut out = stdout();
+    let _ = ratatui::crossterm::execute!(out, ratatui::crossterm::terminal::SetSize(110, 38));
     ratatui::crossterm::execute!(
         out,
         ratatui::crossterm::terminal::EnterAlternateScreen,
@@ -493,7 +494,7 @@ fn toggle_active() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
-    println!("WSM Doctor — Diagnostic Report");
+    println!("rSaver Doctor — Diagnostic Report");
     println!("=============================");
 
     // 1. Check Registry Access
@@ -543,11 +544,11 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     println!("\nDiscovery Directories:");
     if let Ok(appdata) = std::env::var("APPDATA") {
         let wsm_dir = std::path::PathBuf::from(appdata)
-            .join("wsm")
+            .join("rSaver")
             .join("screensavers");
         let exists = wsm_dir.exists();
         println!(
-            "  - %APPDATA%/wsm/screensavers: {}",
+            "  - %APPDATA%/rSaver/screensavers: {}",
             if exists { "EXISTS" } else { "NOT FOUND" }
         );
         if !exists && fix {
@@ -591,8 +592,8 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     // 4. Log File Check
     print!("\nLog File Writable:       ");
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("wsm.log")))
-        .unwrap_or_else(|| std::path::PathBuf::from("wsm.log"));
+        .and_then(|p| p.parent().map(|p| p.join("rSaver.log")))
+        .unwrap_or_else(|| std::path::PathBuf::from("rSaver.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

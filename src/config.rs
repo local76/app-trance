@@ -1,8 +1,8 @@
 //! Two pieces of persisted state:
 //!  - `GlobalConfig` lives in the Windows registry under
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
-//!  - `LocalConfig` lives at `%APPDATA%\wsm\config.yaml` and tracks
-//!    wsm-specific preferences (last selection, prevent-sleep).
+//!  - `LocalConfig` lives at `%APPDATA%\rSaver\config.yaml` and tracks
+//!    rsaver-specific preferences (last selection, prevent-sleep).
 
 use std::path::PathBuf;
 
@@ -10,7 +10,7 @@ use winreg::RegKey;
 use winreg::enums::*;
 
 const REG_DESKTOP: &str = if cfg!(test) {
-    "Software\\wsm\\TestDesktop"
+    "Software\\rSaver\\TestDesktop"
 } else {
     "Control Panel\\Desktop"
 };
@@ -98,7 +98,7 @@ impl Default for LocalConfig {
             hide_stock: false,
             vanity_mode: false,
             feed_urls: vec![
-                "https://raw.githubusercontent.com/tourian-dynamics/windows-screensavers-manager/master/registry.json".to_string()
+                "https://raw.githubusercontent.com/tourian-dynamics/rSaver/master/registry.json".to_string()
             ],
         }
     }
@@ -107,7 +107,7 @@ impl Default for LocalConfig {
 impl LocalConfig {
     pub fn config_path() -> Option<PathBuf> {
         let appdata = std::env::var("APPDATA").ok()?;
-        Some(PathBuf::from(appdata).join("wsm").join("config.yaml"))
+        Some(PathBuf::from(appdata).join("rSaver").join("config.yaml"))
     }
 
     pub fn load() -> Self {
@@ -242,7 +242,7 @@ mod tests {
     #[test]
     fn test_global_config_roundtrip() {
         let _lock = TEST_LOCK.lock().unwrap();
-        // REG_DESKTOP is redirected to "Software\wsm\TestDesktop" in test mode
+        // REG_DESKTOP is redirected to "Software\rSaver\TestDesktop" in test mode
         let config = GlobalConfig {
             active_scr: "C:\\Windows\\System32\\bubbles.scr".to_string(),
             active: true,
@@ -259,6 +259,6 @@ mod tests {
         assert_eq!(loaded.timeout, 300);
 
         // Clean up test key in registry
-        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\wsm\\TestDesktop");
+        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\rSaver\\TestDesktop");
     }
 }

@@ -13,7 +13,7 @@
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap};
 
@@ -94,25 +94,63 @@ fn render_too_small(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect
 
 fn render_title(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme;
+    let metrics = crate::win32::SystemMetrics::query();
+    let username = std::env::var("USERNAME").unwrap_or_else(|_| std::env::var("USER").unwrap_or_else(|_| "user".to_string()));
+    let hostname = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string());
+    
+    let power_str = if metrics.power.ac_online {
+        "AC (Charging)".to_string()
+    } else {
+        format!("Battery ({}%)", metrics.power.battery_percent)
+    };
+    
+    let theme_mode = if theme.dark_mode { "Dark" } else { "Light" };
+
     let block = Block::default()
         .borders(Borders::BOTTOM)
         .border_style(Style::default().fg(theme.border));
-    let mut lines = vec![Line::from(vec![
+
+    let title_line = Line::from(vec![
         Span::styled(
-            "WINDOWS SCREENSAVERS MANAGER",
+            " ❖  rSaver  ❖ ",
             Style::default()
-                .fg(theme.accent_secondary)
+                .fg(Color::Rgb(30, 30, 46))
+                .bg(theme.border_active)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled("  (WSM)", Style::default().fg(theme.text_dim)),
-    ])];
+        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled(
+            format!("{}@{}", username, hostname),
+            Style::default()
+                .fg(Color::Rgb(255, 215, 0))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled(
+            format!("Screen: {}x{} ({} DPI)", metrics.screen_w, metrics.screen_h, metrics.dpi),
+            Style::default().fg(theme.text_main),
+        ),
+        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled(
+            format!("Power: {}", power_str),
+            Style::default().fg(theme.text_main),
+        ),
+        Span::styled(" │ ", Style::default().fg(theme.border)),
+        Span::styled(
+            format!("Theme: {}", theme_mode),
+            Style::default().fg(theme.text_main),
+        ),
+    ]);
+
+    let mut lines = vec![title_line];
+
     if let Some(ref status) = app.status {
         let color = match status.kind {
             crate::app::StatusKind::Info => theme.accent_secondary,
             crate::app::StatusKind::Error => theme.missing,
         };
         lines.push(Line::from(vec![
-            Span::styled("● ", Style::default().fg(color)),
+            Span::styled("  ● ", Style::default().fg(color)),
             Span::styled(
                 &status.text,
                 Style::default()
@@ -123,6 +161,7 @@ fn render_title(app: &App, frame: &mut Frame, area: Rect) {
     } else {
         lines.push(Line::raw(""));
     }
+
     frame.render_widget(Paragraph::new(lines).block(block), area);
 }
 
