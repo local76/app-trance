@@ -1,7 +1,7 @@
 //! Application state, focus, and key bindings.
 //!
 //! # Model-Render Split
-//! WSM uses a strict Model-Render architectural split:
+//! rSaver uses a strict Model-Render architectural split:
 //!
 //! * **Model (`app.rs`)**: Owns all the application state, configuration structures,
 //!   selection metrics, event handling, and mutations. It is completely decoupled from
@@ -39,17 +39,15 @@ pub enum GlobalField {
     PreventSleep,
     CycleTime,
     HideStock,
-    VanityMode,
 }
 
 impl GlobalField {
-    pub const ALL: [GlobalField; 6] = [
+    pub const ALL: &[GlobalField] = &[
         GlobalField::Active,
         GlobalField::Timeout,
         GlobalField::PreventSleep,
         GlobalField::CycleTime,
         GlobalField::HideStock,
-        GlobalField::VanityMode,
     ];
 }
 
@@ -66,6 +64,7 @@ pub enum PendingAction {
     ToggleSelection,
     Preview,
     Configure,
+    ToggleAndApply,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,20 +83,10 @@ pub struct App {
     pub theme: TuiTheme,
     pub status: Option<StatusMessage>,
     pub should_quit: bool,
-    /// Active text in the filter input.  Empty = no filter.
-    pub filter: String,
-    /// True when the user is typing into the filter.
-    pub filtering: bool,
     pub list_offset: usize,
     /// Cached list items for rendering the screensavers list.
     pub list_items: Vec<ratatui::widgets::ListItem<'static>>,
-    pub vanity_enabled: bool,
-    pub particles: Vec<Particle>,
-    pub stars: Vec<Star>,
-    pub term_width: u16,
-    pub term_height: u16,
     pub visual_progress: f64,
-    pub notice: Option<String>,
     #[cfg(feature = "downloader")]
     pub download_state: Option<std::sync::Arc<std::sync::Mutex<crate::downloader::DownloadState>>>,
     #[cfg(feature = "downloader")]
@@ -125,8 +114,6 @@ impl App {
             })
             .unwrap_or(0)
             .min(screensavers.len().saturating_sub(1));
-
-        let vanity_enabled = local.vanity_mode;
 
         #[cfg(feature = "downloader")]
         let registry_results = {
@@ -163,17 +150,9 @@ impl App {
             theme,
             status: None,
             should_quit: false,
-            filter: String::new(),
-            filtering: false,
             list_offset: 0,
             list_items: Vec::new(),
-            vanity_enabled,
-            particles: Vec::new(),
-            stars: Vec::new(),
-            term_width: 80,
-            term_height: 25,
             visual_progress: 0.0,
-            notice: None,
             #[cfg(feature = "downloader")]
             download_state: None,
             #[cfg(feature = "downloader")]
@@ -190,20 +169,7 @@ impl App {
     /// Indices into `self.screensavers` that match the current filter.
     /// Empty filter → all indices, in order.
     pub fn filtered_indices(&self) -> Vec<usize> {
-        let indices: Vec<usize> = if self.filter.is_empty() {
-            (0..self.screensavers.len()).collect()
-        } else {
-            let needle = self.filter.to_lowercase();
-            self.screensavers
-                .iter()
-                .enumerate()
-                .filter_map(|(i, s)| {
-                    let in_name = s.name.to_lowercase().contains(&needle);
-                    let in_path = s.path.to_string_lossy().to_lowercase().contains(&needle);
-                    if in_name || in_path { Some(i) } else { None }
-                })
-                .collect()
-        };
+        let indices: Vec<usize> = (0..self.screensavers.len()).collect();
 
         if self.local.hide_stock {
             indices
@@ -256,17 +222,17 @@ impl App {
                 };
 
                 let location_str = if !exists {
-                    "            ".to_string() // 12 spaces
+                    "              ".to_string() // 14 spaces
                 } else {
                     let path_lower = s.path.to_string_lossy().to_lowercase();
                     if path_lower.contains("system32") {
-                        "\\system32   ".to_string()
+                        "\\system32     ".to_string()
                     } else if path_lower.contains("windows") {
-                        "\\windows    ".to_string()
+                        "\\windows      ".to_string()
                     } else if path_lower.contains("appdata") || path_lower.contains("roaming") {
-                        "\\appdata    ".to_string()
+                        "\\appdata      ".to_string()
                     } else {
-                        "\\local      ".to_string()
+                        "              ".to_string()
                     }
                 };
                 let location_color = if !exists {
@@ -390,8 +356,18 @@ impl App {
             }
         }
         let _ = self.local.save();
-        self.trigger_firework();
         self.update_list_items();
+    }
+
+    /// Toggle selection of the highlighted screensaver and immediately apply it to the registry.
+    pub fn toggle_and_apply_highlighted(&mut self) {
+        #[cfg(feature = "downloader")]
+        if self.trigger_online_download(PendingAction::ToggleAndApply) {
+            return;
+        }
+
+        self.toggle_highlighted_selection();
+        self.apply_highlighted();
     }
 
     /// Toggle the global `active` flag in the registry.
@@ -464,33 +440,7 @@ impl App {
         }
     }
 
-    /// Toggle vanity mode (fireworks / background stars) and persist it.
-    pub fn toggle_vanity_mode(&mut self) {
-        self.vanity_enabled = !self.vanity_enabled;
-        self.local.vanity_mode = self.vanity_enabled;
-        if let Some(s) = self.current_screensaver() {
-            if let Some(name) = s.path.file_name().and_then(|f| f.to_str()) {
-                self.local.last_selected = Some(name.to_string());
-            }
-        }
-        match self.local.save() {
-            Ok(()) => {
-                self.status = Some(StatusMessage {
-                    text: format!("Vanity Mode = {}", if self.vanity_enabled { "ACTIVE" } else { "DISABLED" }),
-                    kind: StatusKind::Info,
-                });
-                if self.vanity_enabled {
-                    self.trigger_firework();
-                }
-            }
-            Err(e) => {
-                self.status = Some(StatusMessage {
-                    text: format!("Save failed: {e}"),
-                    kind: StatusKind::Error,
-                });
-            }
-        }
-    }
+
 
     /// Adjust the screensaver timeout by one step.
     pub fn adjust_timeout(&mut self, delta: i32) {
@@ -612,7 +562,6 @@ impl App {
                     text: format!("Deleted screensaver: {}", name),
                     kind: StatusKind::Info,
                 });
-                self.notice = Some(format!("Deleted screensaver: {}", name));
                 let path_str = path.to_string_lossy().into_owned();
                 if let Some(pos) = self.local.selected_paths.iter().position(|p| p == &path_str) {
                     self.local.selected_paths.remove(pos);
@@ -639,7 +588,7 @@ impl App {
             .collect();
 
         for entry in entries {
-            let filename = entry.download_url.split('/').last().unwrap_or("").to_lowercase();
+            let filename = entry.download_url.split('/').next_back().unwrap_or("").to_lowercase();
             if filename.is_empty() {
                 continue;
             }
@@ -735,7 +684,6 @@ impl App {
             });
         }
         let _ = self.local.save();
-        self.trigger_firework();
         self.update_list_items();
     }
 
@@ -761,6 +709,13 @@ impl App {
             FocusedSection::GlobalPrefs => FocusedSection::SaverList,
             FocusedSection::SaverList => FocusedSection::GlobalPrefs,
         };
+        self.status = Some(StatusMessage {
+            text: format!("Focused Section: {}", match self.focused {
+                FocusedSection::GlobalPrefs => "Global Preferences",
+                FocusedSection::SaverList => "Screensaver List",
+            }),
+            kind: StatusKind::Info,
+        });
     }
 
     /// Move focus / highlight depending on direction.
@@ -781,11 +736,6 @@ impl App {
 
     /// Handle a single key event.  Returns `true` if the app should quit.
     pub fn handle_key(&mut self, code: KeyCode, modifiers: KeyModifiers) -> bool {
-        if self.notice.is_some() {
-            self.notice = None;
-            return self.should_quit;
-        }
-
         // Clear any error status on any user keypress. Info status remains subject to the timer.
         if let Some(ref msg) = self.status {
             if msg.kind == StatusKind::Error {
@@ -797,44 +747,8 @@ impl App {
             return true;
         }
 
-        // While the filter is focused, all printable input goes to the
-        // filter buffer; Backspace deletes, Esc clears & exits filter mode.
-        if self.filtering {
-            match code {
-                KeyCode::Esc => {
-                    self.filter.clear();
-                    self.filtering = false;
-                    self.resolve_highlight();
-                }
-                KeyCode::Backspace => {
-                    self.filter.pop();
-                    self.resolve_highlight();
-                }
-                KeyCode::Down => {
-                    self.move_focus(1);
-                }
-                KeyCode::Up => {
-                    self.move_focus(-1);
-                }
-                KeyCode::Enter => {
-                    self.on_activate();
-                }
-                KeyCode::Tab | KeyCode::BackTab => {
-                    self.filtering = false;
-                    self.cycle_focus();
-                }
-                KeyCode::Char(c) => {
-                    self.filter.push(c);
-                    self.resolve_highlight();
-                }
-                _ => {}
-            }
-            return self.should_quit;
-        }
-
         match code {
             KeyCode::Char('q') | KeyCode::Esc => return true,
-            KeyCode::Char('/') => self.filtering = true,
             KeyCode::F(5) | KeyCode::Char('r') | KeyCode::Char('R') => self.refresh_screensavers(),
             KeyCode::Tab => self.cycle_focus(),
             KeyCode::BackTab => self.cycle_focus(),
@@ -843,11 +757,7 @@ impl App {
             KeyCode::Left => self.on_left(),
             KeyCode::Right => self.on_right(),
             KeyCode::Char(' ') => {
-                if self.focused == FocusedSection::SaverList {
-                    self.toggle_highlighted_selection();
-                } else {
-                    self.on_activate();
-                }
+                self.on_activate();
             }
             KeyCode::Enter => self.on_activate(),
             KeyCode::Char('p') | KeyCode::Char('P') | KeyCode::Char('t') | KeyCode::Char('T') => {
@@ -859,11 +769,11 @@ impl App {
                     self.delete_highlighted();
                 }
             }
-            KeyCode::Char('v') | KeyCode::Char('V') => {
-                self.toggle_vanity_mode();
-            }
             KeyCode::Char('?') | KeyCode::Char('h') | KeyCode::Char('H') | KeyCode::F(1) => {
-                self.notice = Some("Tab: Focus │ Space: Toggle │ Enter: Apply │ P: Preview │ C: Config │ D: Delete │ V: Vanity │ /: Filter".to_string());
+                self.status = Some(StatusMessage {
+                    text: "Help shortcuts are always visible in the top-right panel.".to_string(),
+                    kind: StatusKind::Info,
+                });
             }
             _ => {}
         }
@@ -896,10 +806,9 @@ impl App {
                 GlobalField::Active => self.toggle_active(),
                 GlobalField::PreventSleep => self.toggle_prevent_sleep(),
                 GlobalField::HideStock => self.toggle_hide_stock(),
-                GlobalField::VanityMode => self.toggle_vanity_mode(),
                 GlobalField::Timeout | GlobalField::CycleTime => {}
             },
-            FocusedSection::SaverList => self.apply_highlighted(),
+            FocusedSection::SaverList => self.toggle_and_apply_highlighted(),
         }
     }
 
@@ -1003,190 +912,7 @@ fn is_uninstall(p: &std::path::Path) -> bool {
         .unwrap_or(false)
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Star {
-    pub x: f64,
-    pub y: f64,
-    pub brightness: f64,
-}
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum ParticlePhase {
-    Ascent,
-    Explosion,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Particle {
-    pub x: f64,
-    pub y: f64,
-    pub vx: f64,
-    pub vy: f64,
-    pub symbol: &'static str,
-    pub age: u32,
-    pub max_age: u32,
-    pub color_idx: usize,
-    pub phase: ParticlePhase,
-}
-
-impl App {
-    /// Generate random background stars matching the terminal bounds
-    pub fn generate_stars(&mut self) {
-        let width = self.term_width;
-        let height = self.term_height;
-        let mut stars = Vec::new();
-        let mut seed = 12345u64;
-        if let Ok(d) = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH) {
-            seed = d.as_micros() as u64;
-        }
-        let star_count = ((width as u32 * height as u32) / 80).clamp(15, 60);
-        for _ in 0..star_count {
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let x = (seed % width.max(1) as u64) as f64;
-            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-            let y = (seed % height.max(1) as u64) as f64;
-            stars.push(Star { x, y, brightness: 0.0 });
-        }
-        self.stars = stars;
-    }
-
-    /// Trigger a firework launch from the bottom center of the terminal.
-    pub fn trigger_firework(&mut self) {
-        if !self.vanity_enabled {
-            return;
-        }
-        let width = self.term_width;
-        let height = self.term_height;
-        let mut seed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_micros() as u64)
-            .unwrap_or(0);
-
-        let start_x = (width / 2) as f64 + ((seed % 30) as f64 - 15.0);
-        let start_y = height.saturating_sub(1) as f64;
-
-        // Random target height: between top 10% and 50% of terminal height.
-        let min_target = (height as f64 * 0.1).max(2.0);
-        let max_target = (height as f64 * 0.5).max(4.0);
-        let range = if max_target > min_target { max_target - min_target } else { 1.0 };
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-        let target_y = min_target + ((seed % 100) as f64 / 100.0) * range;
-
-        let dist = (start_y - target_y).max(1.0);
-        
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-        let vy: f64 = -0.5 - ((seed % 100) as f64 / 100.0) * 0.4; // Launch upwards at 30 FPS speed
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-        let vx: f64 = ((seed % 100) as f64 - 50.0) / 100.0 * 0.25; // Random launch direction (slight angle)
-        
-        let max_age = (dist / vy.abs()).round() as u32;
-
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-        self.particles.push(Particle {
-            x: start_x,
-            y: start_y,
-            vx,
-            vy,
-            symbol: "▲",
-            age: 0,
-            max_age,
-            color_idx: (seed % 5) as usize,
-            phase: ParticlePhase::Ascent,
-        });
-    }
-
-    /// Update TUI fireworks particle simulation physics
-    pub fn update_particles(&mut self, width: u16, height: u16) {
-        if !self.vanity_enabled {
-            self.particles.clear();
-            self.stars.clear();
-            return;
-        }
-
-        // Initialize or regenerate stars if window size changed
-        if width != self.term_width || height != self.term_height || self.stars.is_empty() {
-            self.term_width = width;
-            self.term_height = height;
-            self.generate_stars();
-        }
-
-        // Decay background stars
-        for star in &mut self.stars {
-            star.brightness = (star.brightness - 0.04).max(0.0);
-        }
-
-        let mut next_particles = Vec::new();
-        let mut seed = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_micros() as u64)
-            .unwrap_or(0);
-
-        for mut p in self.particles.drain(..) {
-            p.x += p.vx;
-            p.y += p.vy;
-            p.age += 1;
-
-            if p.x >= 0.0 && p.x < width as f64 && p.y >= 0.0 && p.y < height as f64 {
-                match p.phase {
-                    ParticlePhase::Ascent => {
-                        if p.age >= p.max_age {
-                            // Explode into a burst of sparkles!
-                            let symbols = ["✦", "✧", "*", "+", ".", "°", "o"];
-                            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                            let count = 14 + (seed % 10) as usize;
-                            for i in 0..count {
-                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                                let angle = (i as f64 / count as f64) * 2.0 * std::f64::consts::PI;
-                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                                let speed = 0.15 + ((seed % 100) as f64 / 100.0) * 0.25;
-                                let vx = angle.cos() * speed;
-                                // Scale y-velocity slightly to accommodate rectangular terminal cell aspect ratio
-                                let vy = angle.sin() * speed * 0.45;
-
-                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                                let symbol_idx = (seed as usize) % symbols.len();
-                                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                                let max_age = 12 + (seed % 8) as u32;
-
-                                next_particles.push(Particle {
-                                    x: p.x,
-                                    y: p.y,
-                                    vx,
-                                    vy,
-                                    symbol: symbols[symbol_idx],
-                                    age: 0,
-                                    max_age,
-                                    color_idx: p.color_idx,
-                                    phase: ParticlePhase::Explosion,
-                                });
-                            }
-                        } else {
-                            next_particles.push(p);
-                        }
-                    }
-                    ParticlePhase::Explosion => {
-                        p.vy += 0.008; // Gravity for 30 FPS
-                        
-                        // Light up nearby stars
-                        for star in &mut self.stars {
-                            let dx = p.x - star.x;
-                            let dy = p.y - star.y;
-                            let dist = (dx * dx + dy * dy).sqrt();
-                            if dist < 5.0 {
-                                star.brightness = (star.brightness + (5.0 - dist) * 0.15).min(1.0);
-                            }
-                        }
-
-                        if p.age < p.max_age {
-                            next_particles.push(p);
-                        }
-                    }
-                }
-            }
-        }
-        self.particles = next_particles;
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -1238,20 +964,7 @@ mod tests {
         // No filter -> all indices
         assert_eq!(app.filtered_indices(), vec![0, 1, 2]);
 
-        // Filter bubbles
-        app.filter = "bubble".to_string();
-        assert_eq!(app.filtered_indices(), vec![0]);
-
-        // Filter by path substring
-        app.filter = "system32".to_string();
-        assert_eq!(app.filtered_indices(), vec![0, 1, 2]);
-
-        // Filter no match
-        app.filter = "none".to_string();
-        assert_eq!(app.filtered_indices(), Vec::<usize>::new());
-
         // Hide stock screensavers
-        app.filter = String::new();
         app.local.hide_stock = true;
         assert_eq!(app.filtered_indices(), Vec::<usize>::new());
     }
@@ -1277,9 +990,9 @@ mod tests {
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
         assert_eq!(app.global_field, GlobalField::HideStock);
 
-        // Move down to VanityMode
+        // Move down wraps around to Active
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::VanityMode);
+        assert_eq!(app.global_field, GlobalField::Active);
 
         // Tab cycles focus to SaverList
         app.handle_key(KeyCode::Tab, KeyModifiers::empty());
@@ -1297,7 +1010,7 @@ mod tests {
 
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "wsm_test_app_{}",
+            "rsaver_test_app_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -1328,17 +1041,13 @@ mod tests {
         assert_eq!(app.local.selected_paths[1], "C:\\Windows\\System32\\mystify.scr");
 
         // Hitting Enter on the list applies the multi-selection.
-        // It should set registry/global config active_scr to the path of wsm.exe itself.
-        app.handle_key(KeyCode::Enter, KeyModifiers::empty());
+        // It should set registry/global config active_scr to the path of rsav.exe itself.
         let exe = std::env::current_exe().unwrap_or_default();
         assert_eq!(app.global.active_scr, exe.to_string_lossy().into_owned());
 
-        // Toggle second item again (uncheck Mystify)
-        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
-        assert_eq!(app.local.selected_paths.len(), 1);
-
-        // Apply again, should set global config active_scr to Bubbles directly
+        // Toggle second item again (uncheck Mystify) using Enter (which does the same thing)
         app.handle_key(KeyCode::Enter, KeyModifiers::empty());
+        assert_eq!(app.local.selected_paths.len(), 1);
         assert_eq!(app.global.active_scr, "C:\\Windows\\System32\\bubbles.scr");
 
         // Clean up temp dir
@@ -1348,6 +1057,23 @@ mod tests {
     #[test]
     #[cfg(feature = "downloader")]
     fn test_registry_merge_and_automated_downloader() {
+        let _lock = crate::config::TEST_LOCK.lock().unwrap();
+
+        // Create a unique temp dir for the test to avoid collisions
+        let temp_dir = std::env::temp_dir().join(format!(
+            "rsaver_test_app_downloader_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_micros()
+        ));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        // Set APPDATA to redirect LocalConfig load/save
+        unsafe {
+            std::env::set_var("APPDATA", &temp_dir);
+        }
+
         let mut app = mock_app();
         app.focused = FocusedSection::SaverList;
 
@@ -1364,7 +1090,7 @@ mod tests {
                 version: "1.0".to_string(),
             },
         ];
-        app.merge_registry_entries(entries);
+        app.merge_registry_entries(entries.clone());
 
         // Verify list now has 4 items (alphabetically ordered: Bubbles, Mystify, Ribbons, Win-beams)
         assert_eq!(app.screensavers.len(), 4);
@@ -1382,6 +1108,9 @@ mod tests {
         app.toggle_highlighted_selection();
         assert!(app.download_state.is_some());
         assert_eq!(app.pending_action, Some(PendingAction::ToggleSelection));
+
+        // Clean up temp dir
+        let _ = std::fs::remove_dir_all(&temp_dir);
     }
 
     #[test]

@@ -1,4 +1,4 @@
-//! Safe wrappers around the Win32 APIs that WSM touches.
+//! Safe wrappers around the Win32 APIs that rSaver touches.
 //!
 //! Everything that calls into `windows-sys` lives here so the rest of the
 //! codebase never needs `unsafe`.
@@ -371,7 +371,7 @@ pub fn set_console_title(title: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-/// A guard that holds a named system mutex to ensure only one instance of WSM TUI is running.
+/// A guard that holds a named system mutex to ensure only one instance of rSaver TUI is running.
 pub struct SingleInstanceGuard {
     handle: windows_sys::Win32::Foundation::HANDLE,
 }
@@ -390,7 +390,7 @@ impl SingleInstanceGuard {
             ) -> windows_sys::Win32::Foundation::HANDLE;
         }
 
-        let name: Vec<u16> = "Local\\WSM_SingleInstanceMutex_2026"
+        let name: Vec<u16> = "Local\\rsav_SingleInstanceMutex_2026"
             .encode_utf16()
             .chain(std::iter::once(0))
             .collect();
@@ -405,7 +405,7 @@ impl SingleInstanceGuard {
         if err == ERROR_ALREADY_EXISTS {
             // SAFETY: CloseHandle is safe to call on non-null handle.
             unsafe { windows_sys::Win32::Foundation::CloseHandle(handle) };
-            return Err("Another instance of WSM is already running.".to_string());
+            return Err("Another instance of rSaver is already running.".to_string());
         }
 
         Ok(SingleInstanceGuard { handle })
@@ -450,7 +450,7 @@ impl CycleMask {
         };
         use windows_sys::Win32::Graphics::Gdi::{GetStockObject, BLACK_BRUSH, HBRUSH};
 
-        let class_name: Vec<u16> = "wsm_mask_class\0".encode_utf16().collect();
+        let class_name: Vec<u16> = "rsaver_mask_class\0".encode_utf16().collect();
 
         unsafe {
             let wnd_class = WNDCLASSW {
@@ -519,4 +519,37 @@ impl Drop for CycleMask {
             }
         }
     }
+}
+
+/// Query the Windows OS version and build number from the registry.
+pub fn query_os_version() -> String {
+    use winreg::RegKey;
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+
+    let Ok(key) = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion")
+    else {
+        return "Windows".to_string();
+    };
+
+    let mut product_name = key.get_value::<String, _>("ProductName").unwrap_or_else(|_| "Windows".to_string());
+    let current_build = key.get_value::<String, _>("CurrentBuild").unwrap_or_default();
+    let display_version = key.get_value::<String, _>("DisplayVersion").unwrap_or_default();
+
+    if product_name.starts_with("Windows 10") {
+        if let Ok(build) = current_build.parse::<u32>() {
+            if build >= 22000 {
+                product_name = product_name.replace("Windows 10", "Windows 11");
+            }
+        }
+    }
+
+    let mut parts = vec![product_name];
+    if !display_version.is_empty() {
+        parts.push(display_version);
+    }
+    if !current_build.is_empty() {
+        parts.push(format!("(Build {})", current_build));
+    }
+    parts.join(" ")
 }

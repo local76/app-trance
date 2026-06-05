@@ -208,7 +208,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
         }
     };
 
-    let _title_guard = ConsoleTitleGuard::new("rSaver — Windows Screensavers Manager");
+    let _title_guard = ConsoleTitleGuard::new("rSav");
 
     let screensavers = preview::discover();
 
@@ -228,9 +228,12 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
         ratatui::crossterm::cursor::Hide
     )?;
 
+    let _borderless = BorderlessConsole::enable();
+    // Allow Win32 window style/size changes to propagate to the console buffer
+    std::thread::sleep(std::time::Duration::from_millis(50));
+
     let backend = CrosstermBackend::new(out);
     let mut terminal = Terminal::new(backend)?;
-    let _borderless = BorderlessConsole::enable();
 
     let mut status_ttl: u32 = 0;
     let mut last_sleep_prevented = false;
@@ -288,10 +291,9 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                 app.download_state = None;
                 if download_success {
                     app.status = Some(crate::app::StatusMessage {
-                        text: "Download completed successfully!".to_string(),
+                        text: format!("Downloaded: {}", downloaded_name),
                         kind: crate::app::StatusKind::Info,
                     });
-                    app.notice = Some(format!("Downloaded screensaver: {}", downloaded_name));
                     app.refresh_screensavers();
                     if let Some(action) = app.pending_action.take() {
                         match action {
@@ -299,6 +301,10 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                             crate::app::PendingAction::ToggleSelection => app.toggle_highlighted_selection(),
                             crate::app::PendingAction::Preview => app.preview_highlighted(),
                             crate::app::PendingAction::Configure => app.configure_highlighted(),
+                            crate::app::PendingAction::ToggleAndApply => {
+                                app.toggle_highlighted_selection();
+                                app.apply_highlighted();
+                            }
                         }
                     }
                 } else if let Some(msg) = err_msg {
@@ -316,22 +322,18 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
             app.update_download_progress();
         }
 
-        let term_size = terminal.size().unwrap_or_default();
-        app.update_particles(term_size.width, term_size.height);
-
         terminal.draw(|f| ui::render(&mut app, f))?;
 
-        let is_animating = (app.vanity_enabled && !app.particles.is_empty())
-            || {
-                #[cfg(feature = "downloader")]
-                {
-                    app.download_state.is_some()
-                }
-                #[cfg(not(feature = "downloader"))]
-                {
-                    false
-                }
-            };
+        let is_animating = {
+            #[cfg(feature = "downloader")]
+            {
+                app.download_state.is_some()
+            }
+            #[cfg(not(feature = "downloader"))]
+            {
+                false
+            }
+        };
 
         let poll = if is_animating {
             Duration::from_millis(30)
@@ -543,19 +545,19 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     // 3. Discovery Directories
     println!("\nDiscovery Directories:");
     if let Ok(appdata) = std::env::var("APPDATA") {
-        let wsm_dir = std::path::PathBuf::from(appdata)
+        let rsaver_dir = std::path::PathBuf::from(appdata)
             .join("rSaver")
             .join("screensavers");
-        let exists = wsm_dir.exists();
+        let exists = rsaver_dir.exists();
         println!(
             "  - %APPDATA%/rSaver/screensavers: {}",
             if exists { "EXISTS" } else { "NOT FOUND" }
         );
         if !exists && fix {
-            if std::fs::create_dir_all(&wsm_dir).is_ok() {
-                println!("    [FIXED] Created directory: {:?}", wsm_dir);
+            if std::fs::create_dir_all(&rsaver_dir).is_ok() {
+                println!("    [FIXED] Created directory: {:?}", rsaver_dir);
             } else {
-                println!("    [FAILED] Could not create directory: {:?}", wsm_dir);
+                println!("    [FAILED] Could not create directory: {:?}", rsaver_dir);
             }
         }
     }

@@ -71,7 +71,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
     
     let dest_path = crate::config::LocalConfig::config_path().and_then(|p| {
         p.parent().map(|parent| {
-            let filename = download_url.split('/').last().unwrap_or("screensaver.scr").to_string();
+            let filename = download_url.split('/').next_back().unwrap_or("screensaver.scr").to_string();
             parent.join("screensavers").join(filename)
         })
     });

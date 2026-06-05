@@ -84,7 +84,6 @@ pub struct LocalConfig {
     pub random_cycle_secs: u32,
     pub selected_paths: Vec<String>,
     pub hide_stock: bool,
-    pub vanity_mode: bool,
     pub feed_urls: Vec<String>,
 }
 
@@ -96,7 +95,6 @@ impl Default for LocalConfig {
             random_cycle_secs: 30,
             selected_paths: Vec::new(),
             hide_stock: false,
-            vanity_mode: false,
             feed_urls: vec![
                 "https://raw.githubusercontent.com/tourian-dynamics/rSaver/master/registry.json".to_string()
             ],
@@ -135,8 +133,6 @@ impl LocalConfig {
                     .collect();
             } else if let Some(v) = line.strip_prefix("hide_stock: ") {
                 out.hide_stock = v.trim() == "true";
-            } else if let Some(v) = line.strip_prefix("vanity_mode: ") {
-                out.vanity_mode = v.trim() == "true";
             } else if let Some(v) = line.strip_prefix("feed_urls: ") {
                 out.feed_urls = v
                     .split(';')
@@ -156,13 +152,12 @@ impl LocalConfig {
             std::fs::create_dir_all(parent)?;
         }
         let content = format!(
-            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\nhide_stock: {}\nvanity_mode: {}\nfeed_urls: {}\n",
+            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\nhide_stock: {}\nfeed_urls: {}\n",
             self.last_selected.as_deref().unwrap_or(""),
             self.prevent_sleep,
             self.random_cycle_secs,
             self.selected_paths.join(";"),
             self.hide_stock,
-            self.vanity_mode,
             self.feed_urls.join(";"),
         );
         std::fs::write(path, content)
@@ -181,7 +176,7 @@ mod tests {
         let _lock = TEST_LOCK.lock().unwrap();
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "wsm_test_{}",
+            "rsaver_test_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -203,7 +198,6 @@ mod tests {
                 "C:\\Windows\\System32\\bubbles.scr".to_string(),
             ],
             hide_stock: true,
-            vanity_mode: true,
             feed_urls: vec![
                 "https://example.com/feed1.json".to_string(),
                 "https://example.com/feed2.json".to_string(),
@@ -226,7 +220,6 @@ mod tests {
             ]
         );
         assert!(loaded.hide_stock);
-        assert!(loaded.vanity_mode);
         assert_eq!(
             loaded.feed_urls,
             vec![

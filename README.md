@@ -1,10 +1,10 @@
-# ❖ rSaver — Windows Screensavers Manager ❖
+# rSaver — Windows Screensavers Manager
 
 A lightweight, modern Windows Screen Saver Management TUI dashboard built in Rust. `rSaver` offers a centralized controller for discovering, previewing, configuring, and cycling screensavers on mixed-DPI multi-monitor environments without touching intrusive registry editors.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│  ❖  rSaver  ❖  │  user@localhost  │  Screen: 1920x1080 (96 DPI)  │  Power: AC (Charging)  │  Theme: Dark   │
+│  rSaver  │  user@COMPUTERNAME  │  Windows 11 Pro 25H2 (Build 26200)                                      │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 ```
 
@@ -12,6 +12,17 @@ You can install `rSaver` globally via the Windows Package Manager (WinGet):
 ```powershell
 winget install TourianDynamics.rsav
 ```
+
+---
+
+## 🆕 What's New in v2.0 (Unified Release)
+This release aligns the visual styling, interfaces, and experience of `rSaver` and `rMonitor` under a unified dashboard design system:
+* **Standardized Borders**: Separate bordered blocks for each UI section, removing the outer screen-wide border.
+* **Unified Title Bar**: Standardized header layout displaying `[App Name] │ [user@host] │ [OS & Build]`.
+* **Standard Text Selection**: Restored terminal text selection by disabling raw crossterm mouse capture.
+* **Console Tab Titles**: Sets the active tab title to `"rSav"` on startup and restores it upon exit.
+* **Clean Status Bar**: Bottom status bar has a matching accent-colored `" Status "` border title and clean, bold-colored feedback messages (status light dot removed).
+* **Interactive Status Feedback**: Status bar dynamically reports focus transitions and descriptions when navigating using `Tab`.
 
 ---
 

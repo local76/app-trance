@@ -62,7 +62,7 @@ fn search_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     if let Ok(appdata) = std::env::var("APPDATA") {
-        dirs.push(PathBuf::from(appdata).join("wsm").join("screensavers"));
+        dirs.push(PathBuf::from(appdata).join("rSaver").join("screensavers"));
     }
 
     if let Ok(system_root) = std::env::var("SystemRoot") {
@@ -70,13 +70,6 @@ fn search_dirs() -> Vec<PathBuf> {
         dirs.push(root.clone());
         dirs.push(root.join("System32"));
         dirs.push(root.join("SysWOW64"));
-    }
-
-    if let Ok(pf) = std::env::var("ProgramFiles") {
-        dirs.push(PathBuf::from(pf).join("Windows NT").join("Accessories"));
-    }
-    if let Ok(pfx86) = std::env::var("ProgramFiles(x86)") {
-        dirs.push(PathBuf::from(pfx86).join("Windows NT").join("Accessories"));
     }
 
     dirs
