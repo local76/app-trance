@@ -224,8 +224,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
     ratatui::crossterm::execute!(
         out,
         ratatui::crossterm::terminal::EnterAlternateScreen,
-        ratatui::crossterm::cursor::Hide,
-        ratatui::crossterm::event::DisableMouseCapture
+        ratatui::crossterm::cursor::Hide
     )?;
 
     let backend = CrosstermBackend::new(out);
