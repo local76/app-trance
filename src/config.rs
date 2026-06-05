@@ -85,6 +85,7 @@ pub struct LocalConfig {
     pub selected_paths: Vec<String>,
     pub hide_stock: bool,
     pub vanity_mode: bool,
+    pub feed_urls: Vec<String>,
 }
 
 impl Default for LocalConfig {
@@ -96,6 +97,9 @@ impl Default for LocalConfig {
             selected_paths: Vec::new(),
             hide_stock: false,
             vanity_mode: false,
+            feed_urls: vec![
+                "https://raw.githubusercontent.com/tourian-dynamics/windows-screensavers-manager/master/registry.json".to_string()
+            ],
         }
     }
 }
@@ -133,6 +137,12 @@ impl LocalConfig {
                 out.hide_stock = v.trim() == "true";
             } else if let Some(v) = line.strip_prefix("vanity_mode: ") {
                 out.vanity_mode = v.trim() == "true";
+            } else if let Some(v) = line.strip_prefix("feed_urls: ") {
+                out.feed_urls = v
+                    .split(';')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
             }
         }
         out
@@ -146,13 +156,14 @@ impl LocalConfig {
             std::fs::create_dir_all(parent)?;
         }
         let content = format!(
-            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\nhide_stock: {}\nvanity_mode: {}\n",
+            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\nhide_stock: {}\nvanity_mode: {}\nfeed_urls: {}\n",
             self.last_selected.as_deref().unwrap_or(""),
             self.prevent_sleep,
             self.random_cycle_secs,
             self.selected_paths.join(";"),
             self.hide_stock,
             self.vanity_mode,
+            self.feed_urls.join(";"),
         );
         std::fs::write(path, content)
     }
@@ -193,6 +204,10 @@ mod tests {
             ],
             hide_stock: true,
             vanity_mode: true,
+            feed_urls: vec![
+                "https://example.com/feed1.json".to_string(),
+                "https://example.com/feed2.json".to_string(),
+            ],
         };
 
         // Save
@@ -212,6 +227,13 @@ mod tests {
         );
         assert!(loaded.hide_stock);
         assert!(loaded.vanity_mode);
+        assert_eq!(
+            loaded.feed_urls,
+            vec![
+                "https://example.com/feed1.json".to_string(),
+                "https://example.com/feed2.json".to_string(),
+            ]
+        );
 
         // Clean up temp dir
         let _ = std::fs::remove_dir_all(&temp_dir);

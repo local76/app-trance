@@ -132,11 +132,21 @@ impl App {
         let registry_results = {
             let state = std::sync::Arc::new(std::sync::Mutex::new(None));
             let thread_state = state.clone();
+            let feed_urls = local.feed_urls.clone();
             std::thread::spawn(move || {
-                let url = "https://raw.githubusercontent.com/tourian-dynamics/windows-screensavers-manager/master/registry.json";
-                if let Ok(entries) = crate::downloader::fetch_registry(url) {
+                let mut all_entries = Vec::new();
+                for url in feed_urls {
+                    if let Ok(entries) = crate::downloader::fetch_registry(&url) {
+                        for entry in entries {
+                            if !all_entries.iter().any(|e: &crate::downloader::RegistryEntry| e.download_url == entry.download_url) {
+                                all_entries.push(entry);
+                            }
+                        }
+                    }
+                }
+                if !all_entries.is_empty() {
                     if let Ok(mut lock) = thread_state.lock() {
-                        *lock = Some(entries);
+                        *lock = Some(all_entries);
                     }
                 }
             });
