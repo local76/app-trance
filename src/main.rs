@@ -215,10 +215,18 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
 
     let mut app = App::new(screensavers, global, local, theme);
 
-    let backend = CrosstermBackend::new(stdout());
+    ratatui::crossterm::terminal::enable_raw_mode()?;
+    let mut out = stdout();
+    ratatui::crossterm::execute!(
+        out,
+        ratatui::crossterm::terminal::EnterAlternateScreen,
+        ratatui::crossterm::cursor::Hide,
+        ratatui::crossterm::event::DisableMouseCapture
+    )?;
+
+    let backend = CrosstermBackend::new(out);
     let mut terminal = Terminal::new(backend)?;
     let _borderless = BorderlessConsole::enable();
-    let _ = ratatui::crossterm::execute!(stdout(), ratatui::crossterm::event::DisableMouseCapture);
 
     let mut status_ttl: u32 = 0;
     let mut last_sleep_prevented = false;
