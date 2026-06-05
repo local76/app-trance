@@ -255,8 +255,10 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                 if let Ok(state) = state_mutex.lock() {
                     match state.status {
                         crate::downloader::DownloadStatus::Success => {
-                            reset_state = true;
-                            download_success = true;
+                            if app.visual_progress >= 1.0 {
+                                reset_state = true;
+                                download_success = true;
+                            }
                         }
                         crate::downloader::DownloadStatus::Error(ref err) => {
                             reset_state = true;
@@ -291,6 +293,11 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                     });
                 }
             }
+        }
+
+        #[cfg(feature = "downloader")]
+        {
+            app.update_download_progress();
         }
 
         let term_size = terminal.size().unwrap_or_default();

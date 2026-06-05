@@ -96,6 +96,7 @@ pub struct App {
     pub stars: Vec<Star>,
     pub term_width: u16,
     pub term_height: u16,
+    pub visual_progress: f64,
     #[cfg(feature = "downloader")]
     pub download_state: Option<std::sync::Arc<std::sync::Mutex<crate::downloader::DownloadState>>>,
     #[cfg(feature = "downloader")]
@@ -160,6 +161,7 @@ impl App {
             stars: Vec::new(),
             term_width: 80,
             term_height: 25,
+            visual_progress: 0.0,
             #[cfg(feature = "downloader")]
             download_state: None,
             #[cfg(feature = "downloader")]
@@ -654,10 +656,29 @@ impl App {
                 };
                 self.pending_action = Some(action);
                 self.download_state = Some(crate::downloader::spawn_download(&entry));
+                self.visual_progress = 0.0;
                 return true;
             }
         }
         false
+    }
+
+    /// Update visual progress towards the actual download progress.
+    pub fn update_download_progress(&mut self) {
+        #[cfg(feature = "downloader")]
+        if self.download_state.is_some() {
+            let mut actual_progress = 0.0;
+            if let Some(ref state_mutex) = self.download_state {
+                if let Ok(state) = state_mutex.lock() {
+                    actual_progress = state.progress;
+                }
+            }
+            // Increment visual progress smoothly (e.g. by 0.02 per frame, roughly ~1.5s total duration for instant downloads)
+            let target = if actual_progress >= 1.0 { 1.0 } else { actual_progress };
+            if self.visual_progress < target {
+                self.visual_progress = (self.visual_progress + 0.015).min(target);
+            }
+        }
     }
 
     /// Toggle selection of the highlighted screensaver for custom cycling.

@@ -552,12 +552,11 @@ fn render_pacman_overlay(app: &App, frame: &mut Frame) {
     let inner = block.inner(popup_area);
     frame.render_widget(block, popup_area);
 
-    // Get progress and name from state
-    let mut progress = 0.0;
+    // Get progress from visual progress, and name from state
+    let progress = app.visual_progress;
     let mut name = String::new();
     if let Some(ref state_mutex) = app.download_state {
         if let Ok(state) = state_mutex.lock() {
-            progress = state.progress;
             name = state.name.clone();
         }
     }
