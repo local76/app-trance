@@ -21,8 +21,6 @@ use crate::app::{App, FocusedSection, GlobalField};
 
 
 
-/// Number of rows reserved for the help block (2 borders + 7 content lines).
-const HELP_ROWS: u16 = 9;
 /// Number of rows reserved for the global-prefs block (2 borders + 5 content
 /// lines + 1 padding).
 const PREFS_ROWS: u16 = 9;
@@ -45,14 +43,23 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Constraint::Length(TITLE_ROWS),
             Constraint::Length(PREFS_ROWS),
             Constraint::Min(3), // saver list
-            Constraint::Length(HELP_ROWS),
         ])
         .split(area);
 
     render_title(app, frame, outer[0]);
-    render_prefs(app, frame, outer[1]);
+
+    let top_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
+        ])
+        .split(outer[1]);
+
+    render_prefs(app, frame, top_layout[0]);
+    render_help(theme, frame, top_layout[1]);
+
     render_list(app, frame, outer[2]);
-    render_help(theme, frame, outer[3]);
 
     if app.vanity_enabled {
         render_vanity_particles(app, frame);
@@ -520,22 +527,22 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
     frame.render_widget(block, area);
 
     let col1 = [
-        ("[Tab]", "cycle focus between preferences and list"),
-        ("[↑/↓]", "navigate preferences or screensavers"),
-        ("[←/→]", "adjust timeout or cycle time"),
-        ("[Space]", "toggle checkboxes or system active status"),
-        ("[Enter]", "apply config to registry"),
-        ("[/]", "filter screensavers by name"),
-        ("[? / H]", "show popup help notice message"),
+        ("Tab", "Focus"),
+        ("↑/↓", "Move"),
+        ("←/→", "Adjust"),
+        ("Space", "Toggle"),
+        ("Enter", "Apply"),
+        ("/", "Filter"),
+        ("? / H", "Help Notice"),
     ];
 
     let col2 = [
-        ("[F5 / R]", "re-scan system screensavers"),
-        ("[P]", "launch fullscreen preview"),
-        ("[C]", "open native configuration"),
-        ("[D]", "delete screensaver from disk"),
-        ("[V]", "toggle interactive vanity"),
-        ("[q/Esc]", "quit manager interface"),
+        ("F5 / R", "Rescan"),
+        ("P", "Preview"),
+        ("C", "Config"),
+        ("D", "Delete"),
+        ("V", "Vanity"),
+        ("q/Esc", "Quit"),
         ("", ""),
     ];
 
@@ -544,9 +551,9 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
         let (k1, d1) = col1[i];
         let (k2, d2) = col2[i];
         help_lines.push(Line::from(vec![
-            Span::styled(format!("  {:<9}", k1), Style::default().fg(theme.accent_primary)),
-            Span::raw(format!("{:<42}", d1)),
-            Span::styled(format!("  {:<10}", k2), Style::default().fg(theme.accent_primary)),
+            Span::styled(format!("  {:<6}", k1), Style::default().fg(theme.accent_primary)),
+            Span::raw(format!("{:<16}", d1)),
+            Span::styled(format!("  {:<7}", k2), Style::default().fg(theme.accent_primary)),
             Span::raw(d2),
         ]));
     }
