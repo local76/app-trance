@@ -384,7 +384,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
 
 fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
     let block = Block::default()
-        .title(Span::styled(" Help & CLI Reference ", Style::default().fg(theme.header)))
+        .title(Span::styled(" Keyboard Shortcuts ", Style::default().fg(theme.header)))
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.border));
     let inner = block.inner(area);
@@ -435,13 +435,6 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("[q / Esc] ", Style::default().fg(theme.accent_primary)),
             Span::raw("quit the manager interface"),
-        ]),
-        Line::raw(""),
-        Line::from(vec![
-            Span::styled("CLI Commands: ", Style::default().fg(theme.header)),
-            Span::styled("Run ", Style::default().fg(theme.text_dim)),
-            Span::styled("wsm.exe --help", Style::default().fg(theme.accent_secondary)),
-            Span::styled(" in terminal to view command line syntax (run, stop, lock, doctor).", Style::default().fg(theme.text_dim)),
         ]),
     ];
 
@@ -560,12 +553,11 @@ fn render_pacman_overlay(app: &App, frame: &mut Frame) {
             "o"
         };
 
-        // Before pacman: empty spaces/eaten track
-        for _ in 0..pacman_pos {
-            track.push(' ');
-        }
-        // Pacman himself
         if progress < 1.0 {
+            // Before pacman: empty spaces/eaten track
+            for _ in 0..pacman_pos {
+                track.push(' ');
+            }
             track.push_str(pacman_char);
             // After pacman: dots remaining to eat, and a ghost at the end
             for i in (pacman_pos + 1)..track_width {
@@ -576,7 +568,11 @@ fn render_pacman_overlay(app: &App, frame: &mut Frame) {
                 }
             }
         } else {
-            track.push_str("o ᗣ");
+            // Pacman has eaten the ghost!
+            for _ in 0..track_width.saturating_sub(1) {
+                track.push(' ');
+            }
+            track.push('o');
         }
 
         let lines = vec![
