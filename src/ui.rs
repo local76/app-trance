@@ -21,8 +21,8 @@ use crate::app::{App, FocusedSection, GlobalField};
 
 
 
-/// Number of rows reserved for the help block (2 borders + 10 content lines).
-const HELP_ROWS: u16 = 12;
+/// Number of rows reserved for the help block (2 borders + 12 content lines).
+const HELP_ROWS: u16 = 14;
 /// Number of rows reserved for the global-prefs block (2 borders + 5 content
 /// lines + 1 padding).
 const PREFS_ROWS: u16 = 9;
@@ -421,8 +421,16 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
             Span::raw("refresh list"),
         ]),
         Line::from(vec![
-            Span::styled("[P / C]   ", Style::default().fg(theme.accent_primary)),
-            Span::raw("preview / configure"),
+            Span::styled("[P]       ", Style::default().fg(theme.accent_primary)),
+            Span::raw("preview highlighted"),
+        ]),
+        Line::from(vec![
+            Span::styled("[C]       ", Style::default().fg(theme.accent_primary)),
+            Span::raw("configure highlighted"),
+        ]),
+        Line::from(vec![
+            Span::styled("[D]       ", Style::default().fg(theme.accent_primary)),
+            Span::raw("delete downloaded"),
         ]),
         Line::from(vec![
             Span::styled("[V]       ", Style::default().fg(theme.accent_primary)),

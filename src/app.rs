@@ -279,10 +279,17 @@ impl App {
                         ratatui::style::Style::default().fg(theme.applied),
                     ));
                 } else if is_online {
-                    spans.push(ratatui::text::Span::styled(
-                        " [Online]",
-                        ratatui::style::Style::default().fg(theme.accent_secondary),
-                    ));
+                    if exists {
+                        spans.push(ratatui::text::Span::styled(
+                            " [local]",
+                            ratatui::style::Style::default().fg(theme.accent_primary),
+                        ));
+                    } else {
+                        spans.push(ratatui::text::Span::styled(
+                            " [Online]",
+                            ratatui::style::Style::default().fg(theme.accent_secondary),
+                        ));
+                    }
                 } else if !exists {
                     spans.push(ratatui::text::Span::styled(
                         " [Missing]",
@@ -549,6 +556,53 @@ impl App {
         }
     }
 
+    /// Delete a downloaded screensaver file from disk.
+    pub fn delete_highlighted(&mut self) {
+        let (path, name) = {
+            let Some(s) = self.current_screensaver() else {
+                return;
+            };
+            (s.path.clone(), s.name.clone())
+        };
+
+        if crate::preview::is_stock_screensaver(&path) {
+            self.status = Some(StatusMessage {
+                text: "Cannot delete stock Windows screensavers.".to_string(),
+                kind: StatusKind::Error,
+            });
+            return;
+        }
+
+        if !path.exists() {
+            self.status = Some(StatusMessage {
+                text: "Screensaver is not downloaded locally.".to_string(),
+                kind: StatusKind::Error,
+            });
+            return;
+        }
+
+        match std::fs::remove_file(&path) {
+            Ok(()) => {
+                self.status = Some(StatusMessage {
+                    text: format!("Deleted screensaver: {}", name),
+                    kind: StatusKind::Info,
+                });
+                let path_str = path.to_string_lossy().into_owned();
+                if let Some(pos) = self.local.selected_paths.iter().position(|p| p == &path_str) {
+                    self.local.selected_paths.remove(pos);
+                    let _ = self.local.save();
+                }
+                self.refresh_screensavers();
+            }
+            Err(e) => {
+                self.status = Some(StatusMessage {
+                    text: format!("Failed to delete: {e}"),
+                    kind: StatusKind::Error,
+                });
+            }
+        }
+    }
+
     /// Merge online screensaver entries into local list.
     #[cfg(feature = "downloader")]
     pub fn merge_registry_entries(&mut self, entries: Vec<crate::downloader::RegistryEntry>) {
@@ -748,6 +802,11 @@ impl App {
                 self.preview_highlighted()
             }
             KeyCode::Char('c') | KeyCode::Char('C') => self.configure_highlighted(),
+            KeyCode::Char('d') | KeyCode::Char('D') => {
+                if self.focused == FocusedSection::SaverList {
+                    self.delete_highlighted();
+                }
+            }
             KeyCode::Char('v') | KeyCode::Char('V') => {
                 self.toggle_vanity_mode();
             }
