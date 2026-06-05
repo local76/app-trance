@@ -21,8 +21,8 @@ use crate::app::{App, FocusedSection, GlobalField};
 
 
 
-/// Number of rows reserved for the help block (2 borders + 12 content lines).
-const HELP_ROWS: u16 = 14;
+/// Number of rows reserved for the help block (2 borders + 2 content lines).
+const HELP_ROWS: u16 = 4;
 /// Number of rows reserved for the global-prefs block (2 borders + 5 content
 /// lines + 1 padding).
 const PREFS_ROWS: u16 = 9;
@@ -56,13 +56,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
 
     if app.vanity_enabled {
         render_vanity_particles(app, frame);
-    }
-
-    #[cfg(feature = "downloader")]
-    {
-        if app.download_state.is_some() {
-            render_pacman_overlay(app, frame);
-        }
     }
 
     if app.notice.is_some() {
@@ -144,6 +137,86 @@ fn render_title(app: &App, frame: &mut Frame, area: Rect) {
 
     let mut lines = vec![title_line];
 
+    #[cfg(feature = "downloader")]
+    let mut is_downloading = false;
+    #[cfg(feature = "downloader")]
+    let mut download_name = String::new();
+    #[cfg(feature = "downloader")]
+    {
+        if let Some(ref state_mutex) = app.download_state {
+            is_downloading = true;
+            if let Ok(state) = state_mutex.lock() {
+                download_name = state.name.clone();
+            }
+        }
+    }
+
+    #[cfg(feature = "downloader")]
+    if is_downloading {
+        let progress = app.visual_progress;
+        let track_width = 30;
+        let pacman_pos = ((progress * track_width as f64).round() as usize).min(track_width);
+        
+        let mut track = String::new();
+        let is_mouth_open = (std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() / 150)
+            .unwrap_or(0) % 2) == 0;
+            
+        let pacman_char = if progress >= 1.0 {
+            "o"
+        } else if is_mouth_open {
+            "ᗧ"
+        } else {
+            "o"
+        };
+
+        if progress < 1.0 {
+            for _ in 0..pacman_pos {
+                track.push(' ');
+            }
+            track.push_str(pacman_char);
+            for i in (pacman_pos + 1)..track_width {
+                if i == track_width - 1 {
+                    track.push('ᗣ'); // Ghost
+                } else {
+                    track.push('·'); // Dots
+                }
+            }
+        } else {
+            for _ in 0..track_width.saturating_sub(1) {
+                track.push(' ');
+            }
+            track.push('o');
+        }
+
+        lines.push(Line::from(vec![
+            Span::styled("  ● ", Style::default().fg(theme.accent_secondary)),
+            Span::styled(format!("Downloading ({}): ", download_name), Style::default().fg(theme.text_main).add_modifier(Modifier::BOLD)),
+            Span::styled(" [", Style::default().fg(theme.border)),
+            Span::styled(track, Style::default().fg(theme.accent_primary)),
+            Span::styled("]", Style::default().fg(theme.border)),
+            Span::styled(format!(" {:>3.0}%", progress * 100.0), Style::default().fg(theme.accent_secondary)),
+        ]));
+    } else if let Some(ref status) = app.status {
+        let color = match status.kind {
+            crate::app::StatusKind::Info => theme.accent_secondary,
+            crate::app::StatusKind::Error => theme.missing,
+        };
+        lines.push(Line::from(vec![
+            Span::styled("  ● ", Style::default().fg(color)),
+            Span::styled(
+                &status.text,
+                Style::default()
+                    .fg(theme.text_main)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+    } else {
+        lines.push(Line::raw(""));
+    }
+
+    #[cfg(not(feature = "downloader"))]
     if let Some(ref status) = app.status {
         let color = match status.kind {
             crate::app::StatusKind::Info => theme.accent_secondary,
@@ -430,50 +503,31 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
     frame.render_widget(block, area);
 
     let help_lines = vec![
-        Line::from(Span::styled("KEYBOARD SHORTCUTS:", Style::default().fg(theme.header))),
         Line::from(vec![
-            Span::styled("[Tab]     ", Style::default().fg(theme.accent_primary)),
-            Span::raw("cycle focus between Preferences and Screen Saver list"),
+            Span::styled("Tab", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Focus │ "),
+            Span::styled("↑/↓", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Move │ "),
+            Span::styled("←/→", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Adjust │ "),
+            Span::styled("Space", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Toggle/Deselect │ "),
+            Span::styled("Enter", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Apply"),
         ]),
         Line::from(vec![
-            Span::styled("[↑/↓]     ", Style::default().fg(theme.accent_primary)),
-            Span::raw("navigate preferences or screensaver entries"),
-        ]),
-        Line::from(vec![
-            Span::styled("[←/→]     ", Style::default().fg(theme.accent_primary)),
-            Span::raw("adjust screensaver Timeout or Cycle Time"),
-        ]),
-        Line::from(vec![
-            Span::styled("[Space]   ", Style::default().fg(theme.accent_primary)),
-            Span::raw("toggle checkboxes or active system settings"),
-        ]),
-        Line::from(vec![
-            Span::styled("[Enter]   ", Style::default().fg(theme.accent_primary)),
-            Span::raw("apply highlighted screensaver configuration to registry"),
-        ]),
-        Line::from(vec![
-            Span::styled("[F5 / R]  ", Style::default().fg(theme.accent_primary)),
-            Span::raw("re-scan System32 and %APPDATA% directories for screensavers"),
-        ]),
-        Line::from(vec![
-            Span::styled("[P]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("launch a fullscreen preview of highlighted screensaver"),
-        ]),
-        Line::from(vec![
-            Span::styled("[C]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("open the native configuration settings window"),
-        ]),
-        Line::from(vec![
-            Span::styled("[D]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("delete downloaded screensavers from local system"),
-        ]),
-        Line::from(vec![
-            Span::styled("[V]       ", Style::default().fg(theme.accent_primary)),
-            Span::raw("toggle interactive vanity modes and animations"),
-        ]),
-        Line::from(vec![
-            Span::styled("[q / Esc] ", Style::default().fg(theme.accent_primary)),
-            Span::raw("quit the manager interface"),
+            Span::styled("P", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Preview │ "),
+            Span::styled("C", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Config │ "),
+            Span::styled("D", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Delete │ "),
+            Span::styled("V", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Vanity │ "),
+            Span::styled("R/F5", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Rescan │ "),
+            Span::styled("Esc/Q", Style::default().fg(theme.accent_primary)),
+            Span::raw(": Quit"),
         ]),
     ];
 
@@ -540,94 +594,6 @@ fn render_vanity_particles(app: &App, frame: &mut Frame) {
     }
 }
 
-#[cfg(feature = "downloader")]
-fn render_pacman_overlay(app: &App, frame: &mut Frame) {
-    let theme = app.theme;
-    let area = frame.area();
-    
-    // Draw centered popup box (width = 50, height = 5)
-    let popup_width = 50;
-    let popup_height = 5;
-    let x = (area.width.saturating_sub(popup_width)) / 2;
-    let y = (area.height.saturating_sub(popup_height)) / 2;
-    let popup_area = Rect::new(x, y, popup_width.min(area.width), popup_height.min(area.height));
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.accent_secondary))
-        .title(Span::styled(" Downloading Online Screensaver ", Style::default().fg(theme.header)));
-    
-    frame.render_widget(Clear, popup_area); // Clear background behind popup
-
-    let inner = block.inner(popup_area);
-    frame.render_widget(block, popup_area);
-
-    // Get progress from visual progress, and name from state
-    let progress = app.visual_progress;
-    let mut name = String::new();
-    if let Some(ref state_mutex) = app.download_state {
-        if let Ok(state) = state_mutex.lock() {
-            name = state.name.clone();
-        }
-    }
-
-    // Build the pacman animation track
-    // Width of track inside borders (inner.width - 12 for percentage and spacing)
-    let track_width = (inner.width.saturating_sub(12)) as usize;
-    if track_width > 0 {
-        let pacman_pos = ((progress * track_width as f64).round() as usize).min(track_width);
-        
-        let mut track = String::new();
-        // Chomping mouth toggle on alternating ticks (using time millisecond modulo)
-        let is_mouth_open = (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() / 150) // toggle every 150ms
-            .unwrap_or(0) % 2) == 0;
-            
-        let pacman_char = if progress >= 1.0 {
-            "o" // Success face
-        } else if is_mouth_open {
-            "ᗧ"
-        } else {
-            "o"
-        };
-
-        if progress < 1.0 {
-            // Before pacman: empty spaces/eaten track
-            for _ in 0..pacman_pos {
-                track.push(' ');
-            }
-            track.push_str(pacman_char);
-            // After pacman: dots remaining to eat, and a ghost at the end
-            for i in (pacman_pos + 1)..track_width {
-                if i == track_width - 1 {
-                    track.push('ᗣ'); // Ghost at the end!
-                } else {
-                    track.push('·'); // Dots
-                }
-            }
-        } else {
-            // Pacman has eaten the ghost!
-            for _ in 0..track_width.saturating_sub(1) {
-                track.push(' ');
-            }
-            track.push('o');
-        }
-
-        let lines = vec![
-            Line::from(vec![
-                Span::styled(format!(" File: {:<30}", name), Style::default().fg(theme.text_main)),
-            ]),
-            Line::from(vec![
-                Span::styled(" [", Style::default().fg(theme.border)),
-                Span::styled(track, Style::default().fg(theme.accent_primary)),
-                Span::styled("]", Style::default().fg(theme.border)),
-                Span::styled(format!(" {:>3.0}%", progress * 100.0), Style::default().fg(theme.accent_secondary)),
-            ]),
-        ];
-        frame.render_widget(Paragraph::new(lines), inner);
-    }
-}
 
 pub fn render_notice_overlay(app: &App, frame: &mut Frame) {
     let theme = app.theme;
