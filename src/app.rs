@@ -232,45 +232,25 @@ impl App {
     }
 
     /// Update the cached ListItem widgets in `self.list_items`.
+    /// Update the cached ListItem widgets in `self.list_items`.
     pub fn update_list_items(&mut self) {
         let theme = self.theme;
-        let active_filename = std::path::Path::new(&self.global.active_scr)
-            .file_name()
-            .and_then(|f| f.to_str())
-            .map(str::to_lowercase);
-        let exe = std::env::current_exe().unwrap_or_default();
-        let exe_filename = exe.file_name()
-            .and_then(|f| f.to_str())
-            .map(str::to_lowercase);
-        let is_cycle_active = active_filename.is_some() && active_filename == exe_filename;
 
         self.list_items = self
             .screensavers
             .iter()
             .map(|s| {
-                let s_filename = s.path.file_name()
-                    .and_then(|f| f.to_str())
-                    .map(str::to_lowercase);
                 let is_checked = self.local.selected_paths.contains(&s.path.to_string_lossy().into_owned());
-                let is_applied = self.global.active && (if is_cycle_active {
-                    is_checked
-                } else {
-                    s_filename.is_some() && s_filename == active_filename
-                });
                 let exists = s.path.exists();
 
                 let prefix = if is_checked { "[x]" } else { "[ ]" };
-                let status_str = if is_applied {
-                    format!("{} Applied", prefix)
-                } else if is_checked {
+                let status_str = if is_checked {
                     format!("{} Active", prefix)
                 } else {
                     format!("{} Inactive", prefix)
                 };
-                let status_color = if is_applied {
+                let status_color = if is_checked {
                     theme.applied
-                } else if is_checked {
-                    theme.accent_primary
                 } else {
                     theme.text_dim
                 };
@@ -327,7 +307,7 @@ impl App {
                     ),
                     ratatui::text::Span::styled(
                         friendly_str,
-                        ratatui::style::Style::default().fg(if is_applied {
+                        ratatui::style::Style::default().fg(if is_checked {
                             theme.text_main
                         } else {
                             theme.text_dim
@@ -335,7 +315,7 @@ impl App {
                     ),
                     ratatui::text::Span::styled(
                         filename_str,
-                        ratatui::style::Style::default().fg(if is_applied {
+                        ratatui::style::Style::default().fg(if is_checked {
                             theme.text_main
                         } else {
                             theme.text_dim
@@ -363,86 +343,37 @@ impl App {
         }
 
         let exe = std::env::current_exe().unwrap_or_default();
-        let highlighted_path = if let Some(s) = self.current_screensaver() {
-            Some(s.path.to_string_lossy().into_owned())
+
+        let count = self.local.selected_paths.len();
+        if count > 1 {
+            self.global.active_scr = exe.to_string_lossy().into_owned();
+            self.global.active = true;
+            self.status = Some(StatusMessage {
+                text: format!("Applied cycle of {} screensavers", count),
+                kind: StatusKind::Info,
+            });
+        } else if count == 1 {
+            let path = self.local.selected_paths[0].clone();
+            self.global.active_scr = path.clone();
+            self.global.active = true;
+
+            // Find the name of the screensaver for the status message
+            let name = self.screensavers.iter()
+                .find(|s| s.path.to_string_lossy() == path)
+                .map(|s| s.name.clone())
+                .unwrap_or_else(|| "Selected Screensaver".to_string());
+
+            self.status = Some(StatusMessage {
+                text: format!("Applied: {}", name),
+                kind: StatusKind::Info,
+            });
         } else {
-            None
-        };
-
-        // Determine if the highlighted screensaver is currently applied and active
-        let active_filename = std::path::Path::new(&self.global.active_scr)
-            .file_name()
-            .and_then(|f| f.to_str())
-            .map(str::to_lowercase);
-        let exe_filename = exe.file_name()
-            .and_then(|f| f.to_str())
-            .map(str::to_lowercase);
-        let is_cycle_active = active_filename.is_some() && active_filename == exe_filename;
-
-        let is_highlighted_applied = if let Some(ref path_str) = highlighted_path {
-            let s_filename = std::path::Path::new(path_str)
-                .file_name()
-                .and_then(|f| f.to_str())
-                .map(str::to_lowercase);
-            let is_checked = self.local.selected_paths.contains(path_str);
-            self.global.active && (if is_cycle_active {
-                is_checked
-            } else {
-                s_filename.is_some() && s_filename == active_filename
-            })
-        } else {
-            false
-        };
-
-        if is_highlighted_applied {
-            // Hitting Enter on an already applied screensaver deselects/deactivates it
             self.global.active_scr = String::new();
             self.global.active = false;
-            self.local.selected_paths.clear();
             self.status = Some(StatusMessage {
                 text: "Screensaver deactivated (turned off)".to_string(),
                 kind: StatusKind::Info,
             });
-        } else {
-            // If selected_paths is empty, automatically check the highlighted screensaver.
-            if self.local.selected_paths.is_empty() {
-                if let Some(ref path) = highlighted_path {
-                    self.local.selected_paths.push(path.clone());
-                }
-            }
-
-            // Decide what to write to the registry based on selected_paths
-            let count = self.local.selected_paths.len();
-            if count > 1 {
-                self.global.active_scr = exe.to_string_lossy().into_owned();
-                self.global.active = true;
-                self.status = Some(StatusMessage {
-                    text: format!("Applied cycle of {} screensavers", count),
-                    kind: StatusKind::Info,
-                });
-            } else if count == 1 {
-                let path = self.local.selected_paths[0].clone();
-                self.global.active_scr = path.clone();
-                self.global.active = true;
-
-                // Find the name of the screensaver for the status message
-                let name = self.screensavers.iter()
-                    .find(|s| s.path.to_string_lossy() == path)
-                    .map(|s| s.name.clone())
-                    .unwrap_or_else(|| "Selected Screensaver".to_string());
-
-                self.status = Some(StatusMessage {
-                    text: format!("Applied: {}", name),
-                    kind: StatusKind::Info,
-                });
-            } else {
-                self.global.active_scr = String::new();
-                self.global.active = false;
-                self.status = Some(StatusMessage {
-                    text: "Screensaver deactivated (turned off)".to_string(),
-                    kind: StatusKind::Info,
-                });
-            }
         }
 
         if let Err(e) = self.global.save() {
