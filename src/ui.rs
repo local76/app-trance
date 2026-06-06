@@ -57,7 +57,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         ),
         Span::styled(" │ ", Style::default().fg(theme.border)),
         Span::styled(
-            "Press ? for help",
+            "Press h for help",
             Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD),
         ),
         Span::styled(" │ ", Style::default().fg(theme.border)),
@@ -353,7 +353,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             &theme,
         ));
         help_text.extend(format_help_row(
-            "r / F5",
+            "r / R",
             "Refresh screensavers list",
             max_desc_width,
             &theme,
@@ -365,7 +365,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             &theme,
         ));
         help_text.extend(format_help_row(
-            "? / h",
+            "h / H",
             "Toggle this help shortcut overlay modal",
             max_desc_width,
             &theme,
@@ -393,6 +393,24 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         help_text.extend(format_help_row(
             "F4",
             "View COPYRIGHT.md document",
+            max_desc_width,
+            &theme,
+        ));
+        help_text.extend(format_help_row(
+            "F5",
+            "View PRIVACY.md document",
+            max_desc_width,
+            &theme,
+        ));
+        help_text.extend(format_help_row(
+            "F6",
+            "View SECURITY.md document",
+            max_desc_width,
+            &theme,
+        ));
+        help_text.extend(format_help_row(
+            "F7",
+            "View CONTRIBUTING.md document",
             max_desc_width,
             &theme,
         ));
@@ -501,11 +519,11 @@ fn render_help(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
         ("↑/↓", "Move"),
         ("←/→", "Adjust"),
         ("Space/Enter", "Toggle/Apply"),
-        ("? / H", "Help Info"),
+        ("h / H", "Help Info"),
     ];
 
     let col2 = [
-        ("F5 / R", "Rescan"),
+        ("R / r", "Rescan"),
         ("P", "Preview"),
         ("C", "Config"),
         ("D", "Delete"),

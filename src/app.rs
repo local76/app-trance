@@ -22,6 +22,9 @@ const README_CONTENT: &str = include_str!("../README.md");
 const SUPPORT_CONTENT: &str = include_str!("../SUPPORT.md");
 const LICENSE_CONTENT: &str = include_str!("../LICENSE.md");
 const COPYRIGHT_CONTENT: &str = include_str!("../COPYRIGHT.md");
+const PRIVACY_CONTENT: &str = include_str!("../PRIVACY.md");
+const SECURITY_CONTENT: &str = include_str!("../SECURITY.md");
+const CONTRIBUTING_CONTENT: &str = include_str!("../CONTRIBUTING.md");
 
 const TIMEOUT_STEP_SECS: u32 = 60;
 const TIMEOUT_MIN_SECS: u32 = 60;
@@ -777,7 +780,7 @@ impl App {
 
         if self.show_help {
             match code {
-                KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('h') => {
+                KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc | KeyCode::Char('h') | KeyCode::Char('H') => {
                     self.show_help = false;
                     self.status = Some(StatusMessage {
                         text: "Help overlay closed.".to_string(),
@@ -800,6 +803,18 @@ impl App {
                     self.show_help = false;
                     self.open_embedded_markdown("COPYRIGHT.md", COPYRIGHT_CONTENT);
                 }
+                KeyCode::F(5) => {
+                    self.show_help = false;
+                    self.open_embedded_markdown("PRIVACY.md", PRIVACY_CONTENT);
+                }
+                KeyCode::F(6) => {
+                    self.show_help = false;
+                    self.open_embedded_markdown("SECURITY.md", SECURITY_CONTENT);
+                }
+                KeyCode::F(7) => {
+                    self.show_help = false;
+                    self.open_embedded_markdown("CONTRIBUTING.md", CONTRIBUTING_CONTENT);
+                }
                 _ => {}
             }
             return false;
@@ -821,6 +836,15 @@ impl App {
                 }
                 KeyCode::F(4) => {
                     self.open_embedded_markdown("COPYRIGHT.md", COPYRIGHT_CONTENT);
+                }
+                KeyCode::F(5) => {
+                    self.open_embedded_markdown("PRIVACY.md", PRIVACY_CONTENT);
+                }
+                KeyCode::F(6) => {
+                    self.open_embedded_markdown("SECURITY.md", SECURITY_CONTENT);
+                }
+                KeyCode::F(7) => {
+                    self.open_embedded_markdown("CONTRIBUTING.md", CONTRIBUTING_CONTENT);
                 }
                 KeyCode::Up => {
                     self.markdown_scroll = self.markdown_scroll.saturating_sub(1);
@@ -847,7 +871,7 @@ impl App {
 
         match code {
             KeyCode::Char('q') | KeyCode::Esc => return true,
-            KeyCode::F(5) | KeyCode::Char('r') | KeyCode::Char('R') => self.refresh_screensavers(),
+            KeyCode::Char('r') | KeyCode::Char('R') => self.refresh_screensavers(),
             KeyCode::Tab => self.cycle_focus(),
             KeyCode::BackTab => self.cycle_focus(),
             KeyCode::Up => self.move_focus(-1),
@@ -879,7 +903,16 @@ impl App {
             KeyCode::F(4) => {
                 self.open_embedded_markdown("COPYRIGHT.md", COPYRIGHT_CONTENT);
             }
-            KeyCode::Char('?') | KeyCode::Char('h') | KeyCode::Char('H') => {
+            KeyCode::F(5) => {
+                self.open_embedded_markdown("PRIVACY.md", PRIVACY_CONTENT);
+            }
+            KeyCode::F(6) => {
+                self.open_embedded_markdown("SECURITY.md", SECURITY_CONTENT);
+            }
+            KeyCode::F(7) => {
+                self.open_embedded_markdown("CONTRIBUTING.md", CONTRIBUTING_CONTENT);
+            }
+            KeyCode::Char('h') | KeyCode::Char('H') => {
                 self.show_help = true;
                 self.status = Some(StatusMessage {
                     text: "Help overlay active. Press ESC/q to close.".to_string(),
