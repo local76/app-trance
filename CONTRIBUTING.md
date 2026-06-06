@@ -1,9 +1,9 @@
-Contributing to rSaver
+Contributing to rIdle
 
-We are thrilled that you want to help improve rSaver! Contributions from the community are what make open-source projects so special. Please follow these guidelines to make sure your contribution matches the style and quality standards of the project.
+We are thrilled that you want to help improve rIdle! Contributions from the community are what make open-source projects so special. Please follow these guidelines to make sure your contribution matches the style and quality standards of the project.
 
 Developer Environment Setup
-To build and test rSaver locally:
+To build and test rIdle locally:
   Make sure you have the standard Rust toolchain installed.
   Clone this repository.
   Check code formatting:

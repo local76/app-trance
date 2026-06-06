@@ -1,7 +1,7 @@
 //! Ratatui-based rendering. Pure function of `App` -> `Frame`.
 //!
 //! # Model-Render Split
-//! rSaver uses a strict Model-Render architectural split:
+//! rIdle uses a strict Model-Render architectural split:
 //!
 //! * **Model (`app.rs`)**: Owns the state (selected saver, timer configuration, focus, etc.)
 //!   and implements the business logic, key handlers, and state modifications.
@@ -51,7 +51,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let hostname = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string());
     let os_str = crate::win32::query_os_version();
 
-    let ver_str = format!("rSaver v{}", env!("CARGO_PKG_VERSION"));
+    let ver_str = format!("rIdle v{}", env!("CARGO_PKG_VERSION"));
     let user_host_str = format!("{}@{}", username, hostname);
     let os_str_val = os_str;
 
@@ -480,7 +480,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         help_text.push(Line::from(""));
         help_text.extend(format_help_row(
             "CLI Subcommands",
-            "rsav.exe [tui | run | stop | toggle-active | lock | configure | preview | doctor]",
+            "ridle.exe [tui | run | stop | toggle-active | lock | configure | preview | doctor]",
             max_desc_width,
             &theme,
         ));
@@ -608,7 +608,7 @@ fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
         let text = vec![
             Line::from("  No .scr files found."),
             Line::from(Span::styled(
-                "  Drop one into %APPDATA%\\rSaver\\screensavers",
+                "  Drop one into %APPDATA%\\rIdle\\screensavers",
                 Style::default().fg(theme.text_dim),
             )),
         ];

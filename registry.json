@@ -4,89 +4,109 @@
     "author": "UberMetroid",
     "description": "Sweeping vertical colored spotlights in purple, blue, and pink. Now features a live dynamic OS name and kernel subtext logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rBeams/rBeams.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rBeams.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rbeams_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rbeams-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rBhop",
     "author": "UberMetroid",
     "description": "Cyberpunk Neon Pink and Cyan Hacker TUI with scrolling live Bhop game panel and full system diagnostics (including GPUs and monitors).",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rBhop/rBhop.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rBhop.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rbhop_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rbhop-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rFire",
     "author": "UberMetroid",
     "description": "Majestic Doom fire simulation sweeping upward, reacting to system load with a live dynamic OS logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rFire/rFire.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rFire.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfire_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfire-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rFireworks",
     "author": "UberMetroid",
     "description": "Cozy city skyline silhouette with warm lit windows and exploding fireworks illuminating the live OS logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rFireworks/rFireworks.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rFireworks.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfireworks_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfireworks-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rLife",
     "author": "UberMetroid",
     "description": "Conway's Game of Life simulated on a grid with nebula trails, interacting with the live dynamic OS logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rLife/rLife.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rLife.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rlife_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rlife-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rMatrix",
     "author": "UberMetroid",
     "description": "Dense Matrix-style falling digital rain using system environment variables and live system data, over the dynamic OS logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rMatrix/rMatrix.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rMatrix.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rmatrix_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rmatrix-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rParty",
     "author": "UberMetroid",
     "description": "Rave party simulation featuring twinkling background stars, a disco ball, and the live dynamic OS logo.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rParty/rParty.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rParty.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rparty_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rparty-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rPour",
     "author": "UberMetroid",
     "description": "Waterfall cascade of characters (including live system data) assembling the dynamic OS logo and kernel.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rPour/rPour.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rPour.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rpour_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rpour-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rUnstable",
     "author": "UberMetroid",
     "description": "A dynamic OS logo exploding outward into chaotic particles (with new explosion types and side effects) and snapping back.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rUnstable/rUnstable.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rUnstable.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-runstable_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-runstable-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   },
   {
     "name": "rFireflies",
     "author": "UberMetroid",
     "description": "Harmonious pulsing Lissajous particle orbits with glowing wireframe connector lines, dynamically adjusting to system DWM colors.",
     "downloads": {
-      "windows": "https://raw.githubusercontent.com/tourian-dynamics/rScreensavers/main/screensavers/rFireflies/rFireflies.scr"
+      "windows": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/rFireflies.scr",
+      "linux-deb": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfireflies_2.0.0_amd64.deb",
+      "linux-rpm": "https://github.com/local76/rIdle-scenes/releases/download/v2.0.0/r-idle-scene-rfireflies-2.0.0-1.x86_64.rpm"
     },
-    "version": "main"
+    "version": "v2.0.0"
   }
 ]

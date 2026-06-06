@@ -1,4 +1,4 @@
-//! rSaver — Windows Screensaver Manager.
+//! rIdle — Windows Screensaver Manager.
 //!
 //! Standalone TUI for configuring any Windows screensaver.
 
@@ -10,15 +10,29 @@ mod config;
 mod preview;
 mod theme;
 mod ui;
+#[cfg(target_os = "windows")]
 mod saver_win32;
+
+#[cfg(not(target_os = "windows"))]
+#[path = "saver_stub.rs"]
+mod saver_win32;
+
 /// Unified win32 module re-exporting common APIs and screensaver-specific APIs.
 pub mod win32 {
     pub use rcommon::win32::*;
+    pub use crate::saver_win32::query_power_status;
+    pub use crate::saver_win32::PowerStatus;
+    pub use crate::saver_win32::RECT;
     pub use crate::saver_win32::*;
-    pub use crate::saver_win32::{query_power_status, PowerStatus};
 }
 
 #[cfg(feature = "downloader")]
+#[cfg(target_os = "windows")]
+pub mod downloader;
+
+#[cfg(feature = "downloader")]
+#[cfg(not(target_os = "windows"))]
+#[path = "downloader_stub.rs"]
 pub mod downloader;
 
 use std::io::{Write, stdout};
@@ -33,9 +47,12 @@ use ratatui::crossterm::terminal::LeaveAlternateScreen;
 use tracing::{error, info};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::EnvFilter;
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Shutdown::LockWorkStation;
 
+#[cfg(target_os = "windows")]
 use winreg::RegKey;
+#[cfg(target_os = "windows")]
 use winreg::enums::HKEY_CURRENT_USER;
 
 use crate::app::{App, KeyCode, KeyModifiers};
@@ -46,7 +63,7 @@ use crate::win32::BorderlessConsole;
 /// Screen saver management for Windows.
 #[derive(Parser, Debug)]
 #[command(
-    name = "rsav",
+    name = "ridle",
     version,
     about,
     long_about = None,
@@ -96,7 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = init_tracing();
     install_panic_hook();
     let cli = Cli::parse_from(pre_munge_args(std::env::args().collect()));
-    info!(?cli, "rsav start");
+    info!(?cli, "ridle start");
 
     let command = cli.command.unwrap_or(Command::Tui);
     let result: Result<(), Box<dyn std::error::Error>> = match command {
@@ -111,13 +128,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if let Err(ref e) = result {
-        error!(error = %e, "rsav failed");
+        error!(error = %e, "ridle failed");
     }
     result
 }
 
 /// Translate Windows `.scr` calling-convention flags (`/s`, `/c`, `/p`) into
-/// clap subcommand names so `rsav.exe /s` works the same as `rsav.exe run`.
+/// clap subcommand names so `ridle.exe /s` works the same as `ridle.exe run`.
 fn pre_munge_args(args: Vec<String>) -> Vec<String> {
     let mut args = args;
     args.retain(|arg| arg != "--relaunched");
@@ -148,8 +165,8 @@ fn pre_munge_args(args: Vec<String>) -> Vec<String> {
 /// the TUI.
 fn init_tracing() -> WorkerGuard {
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("rSaver.log")))
-        .unwrap_or_else(|| PathBuf::from("rSaver.log"));
+        .and_then(|p| p.parent().map(|p| p.join("rIdle.log")))
+        .unwrap_or_else(|| PathBuf::from("rIdle.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -218,7 +235,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
         }
     };
 
-    let _title_guard = ConsoleTitleGuard::new("rSav");
+    let _title_guard = ConsoleTitleGuard::new("rIdle");
 
     let screensavers = preview::discover();
 
@@ -313,9 +330,9 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                     } else {
                         format!("Successfully downloaded: {}", downloaded_name)
                     };
-                    win32::show_toast_notification("rSaver - Download Completed", &_toast_msg);
+                    win32::show_toast_notification("rIdle - Download Completed", &_toast_msg);
                     win32::log_windows_event(
-                        "rSaver",
+                        "rIdle",
                         4, // EVENTLOG_INFORMATION_TYPE
                         1001,
                         &format!("Successfully downloaded: {}", downloaded_name),
@@ -326,7 +343,7 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                     // Re-locate the just-downloaded saver by name (case-insensitive match on
                     // saver name or the basename/stem of its path) so that the pending action
                     // (apply/preview/...) and the highlight operate on the correct item after
-                    // discover + merge have rebuilt and re-sorted the list. This makes rSaver
+                    // discover + merge have rebuilt and re-sorted the list. This makes rIdle
                     // "know where the new screensavers are located" after a download lands.
                     if !downloaded_name.is_empty() {
                         if let Some(pos) = app.screensavers.iter().position(|s| {
@@ -369,11 +386,11 @@ fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error
                     }
                 } else if let Some(msg) = err_msg {
                     win32::show_toast_notification(
-                        "rSaver - Download Failed",
+                        "rIdle - Download Failed",
                         &format!("Failed to download {}: {}", downloaded_name, msg),
                     );
                     win32::log_windows_event(
-                        "rSaver",
+                        "rIdle",
                         1, // EVENTLOG_ERROR_TYPE
                         1002,
                         &format!("Failed to download {}: {}", downloaded_name, msg),
@@ -573,7 +590,10 @@ fn log_environment(theme: &TuiTheme) {
 
 fn run_active_screensaver(lock_first: bool) -> std::io::Result<()> {
     if lock_first {
+        #[cfg(target_os = "windows")]
         unsafe { LockWorkStation() };
+        #[cfg(not(target_os = "windows"))]
+        println!("Locking workstation is not supported on this platform.");
     }
     let global = GlobalConfig::load();
     if global.active_scr.is_empty() {
@@ -648,15 +668,34 @@ fn toggle_active() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
-    println!("rSaver Doctor — Diagnostic Report");
+    println!("rIdle Doctor — Diagnostic Report");
     println!("=============================");
 
-    // 1. Check Registry Access
-    print!("Registry Access:         ");
-    let desktop = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Control Panel\\Desktop");
-    match desktop {
-        Ok(_) => println!("OK (Readable)"),
-        Err(e) => println!("FAILED (Error: {})", e),
+    // 1. Check Registry/Config Access
+    print!("Config Access:           ");
+    #[cfg(target_os = "windows")]
+    {
+        let desktop = RegKey::predef(HKEY_CURRENT_USER).open_subkey("Control Panel\\Desktop");
+        match desktop {
+            Ok(_) => println!("OK (Registry Readable)"),
+            Err(e) => println!("FAILED (Error: {})", e),
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Some(path) = crate::config::LocalConfig::config_path() {
+            if let Some(parent) = path.parent() {
+                if parent.exists() || std::fs::create_dir_all(parent).is_ok() {
+                    println!("OK (Config Dir Accessible)");
+                } else {
+                    println!("FAILED (Cannot access config directory)");
+                }
+            } else {
+                println!("FAILED (Invalid config path parent)");
+            }
+        } else {
+            println!("FAILED (No config path)");
+        }
     }
 
     // 2. Check Active Screensaver
@@ -698,11 +737,11 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     println!("\nDiscovery Directories:");
     if let Ok(appdata) = std::env::var("APPDATA") {
         let rsaver_dir = std::path::PathBuf::from(appdata)
-            .join("rSaver")
+            .join("rIdle")
             .join("screensavers");
         let exists = rsaver_dir.exists();
         println!(
-            "  - %APPDATA%/rSaver/screensavers: {}",
+            "  - %APPDATA%/rIdle/screensavers: {}",
             if exists { "EXISTS" } else { "NOT FOUND" }
         );
         if !exists && fix {
@@ -746,8 +785,8 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     // 4. Log File Check
     print!("\nLog File Writable:       ");
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("rSaver.log")))
-        .unwrap_or_else(|| std::path::PathBuf::from("rSaver.log"));
+        .and_then(|p| p.parent().map(|p| p.join("rIdle.log")))
+        .unwrap_or_else(|| std::path::PathBuf::from("rIdle.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -762,7 +801,7 @@ fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
 
     // 4.5 Clipboard Write Access
     print!("Windows Clipboard:        ");
-    match win32::copy_text_to_clipboard("rSaver Diagnostic Test Connection") {
+    match win32::copy_text_to_clipboard("rIdle Diagnostic Test Connection") {
         Ok(_) => println!("OK (Writable)"),
         Err(e) => println!("FAILED (Error: {})", e),
     }

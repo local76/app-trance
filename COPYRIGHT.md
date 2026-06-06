@@ -1,14 +1,14 @@
-rSaver Copyright Notice
+rIdle Copyright Notice
 
 Copyright (c) 2026 Tourian Dynamics. All rights reserved.
 
-rSaver (Windows Screensavers Manager) is authored by UberMetroid and distributed under the MIT License.
+rIdle (Windows Screensavers Manager) is authored by UberMetroid and distributed under the MIT License.
 
 License Reference
-The full terms of the license governing rSaver can be found in the LICENSE.md file in this repository.
+The full terms of the license governing rIdle can be found in the LICENSE.md file in this repository.
 
 Third-Party Dependency Licenses
-rSaver relies on several open-source libraries. Below is the attribution for the primary components compiled into the binary:
+rIdle relies on several open-source libraries. Below is the attribution for the primary components compiled into the binary:
 
 ratatui: MIT License, Copyright (c) 2023 Ratatui Developers
 crossterm: MIT License, Copyright (c) 2019 Timon Post

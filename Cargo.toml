@@ -1,8 +1,11 @@
 [package]
-name = "rsav"
+name = "ridle"
 version = "2.6.3"
 edition = "2024"
 rust-version = "1.85"
+license = "MIT"
+description = "TUI Windows screensaver manager"
+
 [features]
 default = ["downloader"]
 downloader = ["dep:ureq", "dep:serde", "dep:serde_json"]
@@ -10,12 +13,18 @@ downloader = ["dep:ureq", "dep:serde", "dep:serde_json"]
 [dependencies]
 ratatui = "0.29"
 crossterm = "0.28"
-winreg = "0.52"
 sysinfo = "0.30"
 clap = { version = "4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
+rcommon = { git = "https://github.com/local76/rCommon.git", branch = "main" }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+ureq = { version = "2.9", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_System_Console",
@@ -27,19 +36,20 @@ windows-sys = { version = "0.59", features = [
     "Win32_UI_HiDpi",
     "Win32_System_Threading",
 ]}
-ureq = { version = "2.9", optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true }
-serde_json = { version = "1.0", optional = true }
 windows = { version = "0.52.0", features = [
     "Data_Xml_Dom",
     "UI_Notifications",
 ] }
-rcommon = { git = "https://github.com/tourian-dynamics/rCommon.git", branch = "main" }
 
 [build-dependencies]
-embed-resource = "2.5"
+winres = "0.1"
+
+[package.metadata.generate-rpm]
+auto-req = "no"
+assets = [
+    { source = "target/x86_64-unknown-linux-musl/release/ridle", dest = "/usr/bin/ridle", mode = "755" }
+]
 
 # To build locally before pushing rCommon to GitHub, uncomment:
-# [patch."https://github.com/tourian-dynamics/rCommon.git"]
+# [patch."https://github.com/local76/rCommon.git"]
 # rcommon = { path = "../rCommon" }
-

@@ -3,16 +3,18 @@
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
 //!    (On Linux this is a no-op / stub for now.)
 //!  - `LocalConfig` lives at platform-appropriate config location
-//!    (`%APPDATA%\rSaver\config.yaml` on Windows, `~/.config/rSaver/config.yaml` on Linux)
-//!    and tracks rsaver-specific preferences (last selection, prevent-sleep, feed URLs).
+//!    (`%APPDATA%\rIdle\config.yaml` on Windows, `~/.config/rIdle/config.yaml` on Linux)
+//!    and tracks ridle-specific preferences (last selection, prevent-sleep, feed URLs).
 
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
 use winreg::RegKey;
+#[cfg(target_os = "windows")]
 use winreg::enums::*;
 
 const REG_DESKTOP: &str = if cfg!(test) {
-    "Software\\rSaver\\TestDesktop"
+    "Software\\rIdle\\TestDesktop"
 } else {
     "Control Panel\\Desktop"
 };
@@ -40,14 +42,9 @@ impl Default for GlobalConfig {
 
 impl GlobalConfig {
     pub fn load() -> Self {
-        let desktop = RegKey::predef(HKEY_CURRENT_USER)
-            .open_subkey(REG_DESKTOP)
-            .ok();
-        let get =
-            |name: &str| -> Option<String> { desktop.as_ref()?.get_value::<String, _>(name).ok() };
-        let active_scr = get(REG_SCR).unwrap_or_default();
-        let active = get(REG_ACTIVE).as_deref() == Some("1");
-        let timeout = get(REG_TIMEOUT)
+        let active_scr = rcommon::reg::read_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR).unwrap_or_default();
+        let active = rcommon::reg::read_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE).as_deref() == Some("1");
+        let timeout = rcommon::reg::read_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT)
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(DEFAULT_TIMEOUT_SECS);
         GlobalConfig {
@@ -59,10 +56,9 @@ impl GlobalConfig {
 
     pub fn save(&self) -> std::io::Result<()> {
         let res = (|| {
-            let (desktop, _) = RegKey::predef(HKEY_CURRENT_USER).create_subkey(REG_DESKTOP)?;
-            desktop.set_value(REG_SCR, &self.active_scr)?;
-            desktop.set_value(REG_ACTIVE, &if self.active { "1" } else { "0" })?;
-            desktop.set_value(REG_TIMEOUT, &self.timeout.to_string())?;
+            rcommon::reg::write_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR, &self.active_scr)?;
+            rcommon::reg::write_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE, if self.active { "1" } else { "0" })?;
+            rcommon::reg::write_string(rcommon::reg::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT, &self.timeout.to_string())?;
 
             // Propagate settings changes to the OS immediately
             if !cfg!(test) {
@@ -98,7 +94,7 @@ impl Default for LocalConfig {
             selected_paths: Vec::new(),
             hide_stock: false,
             feed_urls: vec![
-                "https://raw.githubusercontent.com/tourian-dynamics/rSaver/master/registry.json".to_string()
+                "https://raw.githubusercontent.com/local76/rIdle/main/registry.json".to_string()
             ],
         }
     }
@@ -108,7 +104,7 @@ impl LocalConfig {
     pub fn config_path() -> Option<PathBuf> {
         if cfg!(target_os = "windows") {
             let appdata = std::env::var("APPDATA").ok()?;
-            Some(PathBuf::from(appdata).join("rSaver").join("config.yaml"))
+            Some(PathBuf::from(appdata).join("rIdle").join("config.yaml"))
         } else {
             // Linux / macOS XDG
             let base = std::env::var("XDG_CONFIG_HOME")
@@ -116,7 +112,7 @@ impl LocalConfig {
                 .map(PathBuf::from)
                 .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".config")))
                 .unwrap_or_else(|| PathBuf::from(".config"));
-            Some(base.join("rSaver").join("config.yaml"))
+            Some(base.join("rIdle").join("config.yaml"))
         }
     }
 
@@ -188,7 +184,7 @@ mod tests {
         let _lock = TEST_LOCK.lock().unwrap();
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "rsaver_test_{}",
+            "ridle_test_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -245,9 +241,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(target_os = "windows")]
     fn test_global_config_roundtrip() {
         let _lock = TEST_LOCK.lock().unwrap();
-        // REG_DESKTOP is redirected to "Software\rSaver\TestDesktop" in test mode
+        // REG_DESKTOP is redirected to "Software\rIdle\TestDesktop" in test mode
         let config = GlobalConfig {
             active_scr: "C:\\Windows\\System32\\bubbles.scr".to_string(),
             active: true,
@@ -264,6 +261,6 @@ mod tests {
         assert_eq!(loaded.timeout, 300);
 
         // Clean up test key in registry
-        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\rSaver\\TestDesktop");
+        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\rIdle\\TestDesktop");
     }
 }

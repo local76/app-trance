@@ -1,6 +1,6 @@
 Security Policy
 
-We take the security of rSaver seriously. If you discover a vulnerability, please report it following this policy.
+We take the security of rIdle seriously. If you discover a vulnerability, please report it following this policy.
 
 Reporting a Vulnerability
 
@@ -12,6 +12,6 @@ We will acknowledge receipt of your report within 48 hours and work with you to 
 
 Scope and Philosophy
 
-Registry and System Access: rSaver reads and writes system screensaver configurations directly using standard APIs (or winreg under Windows). It does not execute raw command strings or start shell contexts with user input, protecting the host system from injection vectors.
+Registry and System Access: rIdle reads and writes system screensaver configurations directly using standard APIs (or winreg under Windows). It does not execute raw command strings or start shell contexts with user input, protecting the host system from injection vectors.
 
-Minimal Permissions: rSaver does not require Administrator or UAC elevation to run for user-level screen saver configurations.
+Minimal Permissions: rIdle does not require Administrator or UAC elevation to run for user-level screen saver configurations.

@@ -1,7 +1,8 @@
 #![allow(dead_code, non_snake_case)]
 use std::ptr::NonNull;
 use std::ffi::c_void;
-use windows_sys::Win32::Foundation::{HWND, RECT};
+use windows_sys::Win32::Foundation::HWND;
+pub use windows_sys::Win32::Foundation::RECT;
 use windows_sys::Win32::System::Console::{
     GetStdHandle, STD_OUTPUT_HANDLE, CONSOLE_SCREEN_BUFFER_INFOEX,
     GetConsoleScreenBufferInfoEx, GetConsoleWindow, GetConsoleTitleW, SetConsoleTitleW
@@ -266,7 +267,7 @@ impl CycleMask {
         };
         use windows_sys::Win32::Graphics::Gdi::{GetStockObject, BLACK_BRUSH, HBRUSH};
 
-        let class_name: Vec<u16> = "rsaver_mask_class\0".encode_utf16().collect();
+        let class_name: Vec<u16> = "ridle_mask_class\0".encode_utf16().collect();
 
         unsafe {
             let wnd_class = WNDCLASSW {

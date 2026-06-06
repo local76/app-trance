@@ -1,7 +1,7 @@
 //! Application state, focus, and key bindings.
 //!
 //! # Model-Render Split
-//! rSaver uses a strict Model-Render architectural split:
+//! rIdle uses a strict Model-Render architectural split:
 //!
 //! * **Model (`app.rs`)**: Owns all the application state, configuration structures,
 //!   selection metrics, event handling, and mutations. It is completely decoupled from
@@ -1307,7 +1307,7 @@ mod tests {
 
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "rsaver_test_app_{}",
+            "ridle_test_app_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -1338,7 +1338,7 @@ mod tests {
         assert_eq!(app.local.selected_paths[1], "C:\\Windows\\System32\\mystify.scr");
 
         // Hitting Enter on the list applies the multi-selection.
-        // It should set registry/global config active_scr to the path of rsav.exe itself.
+        // It should set registry/global config active_scr to the path of ridle.exe itself.
         let exe = std::env::current_exe().unwrap_or_default();
         assert_eq!(app.global.active_scr, exe.to_string_lossy().into_owned());
 
@@ -1358,7 +1358,7 @@ mod tests {
 
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "rsaver_test_app_downloader_{}",
+            "ridle_test_app_downloader_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

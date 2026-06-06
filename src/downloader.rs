@@ -1,6 +1,6 @@
 //! Downloader module for curated screensavers from the registry.
 //! Supports platform-specific downloads (windows, linux, linux-deb, linux-rpm, linux-arch)
-//! so rSaver can fetch the correct binary or package for the current OS.
+//! so rIdle can fetch the correct binary or package for the current OS.
 //!
 //! Registry entries can specify a `downloads` map (preferred) or legacy `download_url`.
 //! On Linux, best_linux_variant() prefers deb/rpm/arch packages when the matching
@@ -192,7 +192,7 @@ pub fn load_local_registry() -> Result<Vec<RegistryEntry>, Box<dyn std::error::E
         return Ok(entries);
     }
 
-    // Try next to the exe, and walk up parents (handles running target/release/rsav.exe)
+    // Try next to the exe, and walk up parents (handles running target/release/ridle.exe)
     if let Ok(exe) = std::env::current_exe() {
         let mut dir = exe.parent().map(|p| p.to_path_buf());
         while let Some(d) = dir {
@@ -239,7 +239,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
                 .ok()
                 .map(PathBuf::from)
                 .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".local/share")))
-                .map(|p| p.join("rSaver"))
+                .map(|p| p.join("rIdle"))
         };
 
         base.and_then(|parent| {
@@ -258,7 +258,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
             }
 
             let response = ureq::get(&download_url)
-                .set("User-Agent", "rSaver/2.5 (+https://github.com/tourian-dynamics)")
+                .set("User-Agent", "rIdle/2.6.3 (+https://github.com/local76)")
                 .call()?;
             let total_bytes = response
                 .header("Content-Length")
