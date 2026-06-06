@@ -1,8 +1,10 @@
 //! Two pieces of persisted state:
 //!  - `GlobalConfig` lives in the Windows registry under
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
-//!  - `LocalConfig` lives at `%APPDATA%\rSaver\config.yaml` and tracks
-//!    rsaver-specific preferences (last selection, prevent-sleep).
+//!    (On Linux this is a no-op / stub for now.)
+//!  - `LocalConfig` lives at platform-appropriate config location
+//!    (`%APPDATA%\rSaver\config.yaml` on Windows, `~/.config/rSaver/config.yaml` on Linux)
+//!    and tracks rsaver-specific preferences (last selection, prevent-sleep, feed URLs).
 
 use std::path::PathBuf;
 
@@ -104,8 +106,18 @@ impl Default for LocalConfig {
 
 impl LocalConfig {
     pub fn config_path() -> Option<PathBuf> {
-        let appdata = std::env::var("APPDATA").ok()?;
-        Some(PathBuf::from(appdata).join("rSaver").join("config.yaml"))
+        if cfg!(target_os = "windows") {
+            let appdata = std::env::var("APPDATA").ok()?;
+            Some(PathBuf::from(appdata).join("rSaver").join("config.yaml"))
+        } else {
+            // Linux / macOS XDG
+            let base = std::env::var("XDG_CONFIG_HOME")
+                .ok()
+                .map(PathBuf::from)
+                .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".config")))
+                .unwrap_or_else(|| PathBuf::from(".config"));
+            Some(base.join("rSaver").join("config.yaml"))
+        }
     }
 
     pub fn load() -> Self {

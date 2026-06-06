@@ -21,12 +21,16 @@ rSaver manages the native Windows Screen Saver system by bridging standard OS-le
   Curated Screensaver Catalog: Discover, download, and manage a collection of curated retro terminal screensavers directly from the TUI interface.
 
 Curated Screensaver Collection
-rSaver comes integrated with a catalog of retro terminal-style screensavers optimized for Windows 11:
-  win-beams.scr: Colorful sweeping spotlight beams bouncing off terminal walls.
-  win-bhop.scr: Animated cyber-themed scrolling panels.
-  win-matrix.scr: Classic cascading rain of digital characters.
-  win-pipe.scr: Retro 3D pipe generation.
-  win-star.scr: Fast-paced starfield simulation.
+rSaver comes integrated with a catalog of retro terminal-style screensavers optimized for Windows 11 (now fully dynamic with live OS name + kernel logos pulled from the system):
+  beams: Sweeping vertical colored spotlights in purple, blue, and pink. Features live dynamic OS name and kernel subtext.
+  bhop: Cyberpunk Neon Pink and Cyan Hacker TUI with scrolling live Bhop game panel and full system diagnostics (including GPUs and monitors).
+  fire: Majestic Doom fire simulation sweeping upward, reacting to system load with a live dynamic OS logo.
+  fireworks: Cozy city skyline silhouette with warm lit windows and exploding fireworks illuminating the live OS logo.
+  life: Conway's Game of Life simulated on a grid with nebula trails, interacting with the live dynamic OS logo.
+  matrix: Dense Matrix-style falling digital rain using system environment variables and live system data, over the dynamic OS logo.
+  party: Rave party simulation featuring twinkling background stars, a disco ball, and the live dynamic OS logo.
+  pour: Waterfall cascade of characters (including live system data) assembling the dynamic OS logo and kernel.
+  unstable: A dynamic OS logo exploding outward into chaotic particles (with new explosion types and side effects) and snapping back.
 
 CLI Subcommands and Flags
 rSaver acts as both a dashboard and a screensaver command-line handler.
@@ -61,8 +65,13 @@ All data is stored locally under your Windows user profile:
   Logs File: Diagnostics are written to %APPDATA%\rSaver\rSaver.log so they do not clutter raw terminal outputs.
 
 Custom Feeds:
-To add custom online registry catalogs, open %APPDATA%\rSaver\config.yaml and add your feed URLs separated by semicolons:
+To add custom online registry catalogs, open %APPDATA%\rSaver\config.yaml (or ~/.config/rSaver/config.yaml on Linux) and add your feed URLs separated by semicolons:
 feed_urls: https://raw.githubusercontent.com/tourian-dynamics/rSaver/master/registry.json;https://example.com/custom-screensavers.json
+
+Cross-platform support:
+rSaver detects the current OS (`current_platform()`) and selects the right asset from the "downloads" map in the registry.
+- Windows: .scr binary
+- Linux: A single `linux/` bundle (tarball containing the plain ELF xscreensaver hack + .xml descriptor). rSaver will extract and place the binary in `~/.xscreensaver/` and the .xml in the config directory so xscreensaver can find it. No deb/rpm packaging is needed on the source side — a plain executable + .xml is the portable xscreensaver format.
 
 Building From Source
 Ensure you have the Rust compiler toolchain installed on Windows.

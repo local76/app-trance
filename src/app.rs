@@ -619,7 +619,13 @@ impl App {
             .collect();
 
         for entry in entries {
-            let filename = entry.download_url.split('/').next_back().unwrap_or("").to_lowercase();
+            let url = entry.download_url_for_current_platform()
+                .or_else(|| entry.download_url.clone())
+                .unwrap_or_default();
+            if url.is_empty() {
+                continue;
+            }
+            let filename = url.split('/').next_back().unwrap_or("").to_lowercase();
             if filename.is_empty() {
                 continue;
             }
@@ -636,7 +642,7 @@ impl App {
             self.screensavers.push(Screensaver {
                 name: entry.name,
                 path,
-                download_url: Some(entry.download_url),
+                download_url: Some(url),
             });
         }
 
@@ -656,7 +662,8 @@ impl App {
                         name: s.name.clone(),
                         author: String::new(),
                         description: String::new(),
-                        download_url: url.clone(),
+                        download_url: Some(url.clone()),
+                        downloads: None,
                         version: String::new(),
                     };
                     self.pending_action = Some(action);
@@ -1371,28 +1378,26 @@ mod tests {
         // Manually merge registry entries
         let entries = vec![
             crate::downloader::RegistryEntry {
-                name: "Win-beams".to_string(),
+                name: "beams".to_string(),
                 author: "UberMetroid".to_string(),
                 description: "Beams screensaver".to_string(),
-                download_url: "https://example.com/win-beams.scr".to_string(),
-                version: "1.0".to_string(),
+                download_url: Some("https://example.com/beams.scr".to_string()),
+                downloads: None,
+                version: "2.0".to_string(),
             },
         ];
         app.merge_registry_entries(entries.clone());
 
-        // Verify list now has 4 items (alphabetically ordered: Bubbles, Mystify, Ribbons, Win-beams)
+        // Verify list now has 4 items (alphabetically ordered: beams, Bubbles, Mystify, Ribbons)
         assert_eq!(app.screensavers.len(), 4);
-        assert_eq!(app.screensavers[3].name, "Win-beams");
-        assert_eq!(app.screensavers[3].download_url.as_deref(), Some("https://example.com/win-beams.scr"));
+        assert_eq!(app.screensavers[0].name, "beams");
+        assert_eq!(app.screensavers[0].download_url.as_deref(), Some("https://example.com/beams.scr"));
 
-        // Highlight Win-beams (which is index 3)
+        // Highlight beams (which is index 0)
         app.highlighted = 0;
-        app.move_highlight(1); // moves to Mystify (index 1)
-        app.move_highlight(1); // moves to Ribbons (index 2)
-        app.move_highlight(1); // moves to Win-beams (index 3)
-        assert_eq!(app.highlighted, 3);
+        assert_eq!(app.highlighted, 0);
 
-        // Pressing space (toggle selection) should trigger background download of Win-beams
+        // Pressing space (toggle selection) should trigger background download of beams
         app.toggle_highlighted_selection();
         assert!(app.download_state.is_some());
         assert_eq!(app.pending_action, Some(PendingAction::ToggleSelection));

@@ -1,65 +1,96 @@
 [
   {
-    "name": "Win-beams",
+    "name": "beams",
     "author": "UberMetroid",
-    "description": "Sweeping vertical colored spotlights in purple, blue, and pink.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-beams.scr",
-    "version": "1.0"
+    "description": "Sweeping vertical colored spotlights in purple, blue, and pink. Now features a live dynamic OS name and kernel subtext logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/beams.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/beams",
+      "linux-deb": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/beams.deb",
+      "linux-rpm": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/beams.rpm"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-bhop",
+    "name": "bhop",
     "author": "UberMetroid",
-    "description": "Cyberpunk Neon Pink and Cyan Hacker TUI with a scrolling live Bhop game panel.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-bhop.scr",
-    "version": "1.0"
+    "description": "Cyberpunk Neon Pink and Cyan Hacker TUI with scrolling live Bhop game panel and full system diagnostics (including GPUs and monitors).",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/bhop.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/bhop",
+      "linux-deb": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/bhop.deb",
+      "linux-rpm": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/bhop.rpm"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-fire",
+    "name": "fire",
     "author": "UberMetroid",
-    "description": "Majestic Doom fire simulation sweeping upward.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-fire.scr",
-    "version": "1.0"
+    "description": "Majestic Doom fire simulation sweeping upward, reacting to system load with a live dynamic OS logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/fire.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/fire-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-fireworks",
+    "name": "fireworks",
     "author": "UberMetroid",
-    "description": "Cozy city skyline silhouette with warm lit windows and exploding fireworks.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-fireworks.scr",
-    "version": "1.0"
+    "description": "Cozy city skyline silhouette with warm lit windows and exploding fireworks illuminating the live OS logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/fireworks.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/fireworks-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-life",
+    "name": "life",
     "author": "UberMetroid",
-    "description": "Conway's Game of Life simulated on a grid with nebula trails.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-life.scr",
-    "version": "1.0"
+    "description": "Conway's Game of Life simulated on a grid with nebula trails, interacting with the live dynamic OS logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/life.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/life-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-matrix",
+    "name": "matrix",
     "author": "UberMetroid",
-    "description": "Dense Matrix-style falling digital rain using system environment variables.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-matrix.scr",
-    "version": "1.0"
+    "description": "Dense Matrix-style falling digital rain using system environment variables and live system data, over the dynamic OS logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/matrix.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/matrix-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-party",
+    "name": "party",
     "author": "UberMetroid",
-    "description": "Rave party simulation featuring twinkling background stars and a disco ball.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-party.scr",
-    "version": "1.0"
+    "description": "Rave party simulation featuring twinkling background stars, a disco ball, and the live dynamic OS logo.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/party.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/party-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-pour",
+    "name": "pour",
     "author": "UberMetroid",
-    "description": "Waterfall cascade of characters assembling the Windows ASCII logo.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-pour.scr",
-    "version": "1.0"
+    "description": "Waterfall cascade of characters (including live system data) assembling the dynamic OS logo and kernel.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/pour.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/pour-linux.tar.gz"
+    },
+    "version": "2.0"
   },
   {
-    "name": "Win-unstable",
+    "name": "unstable",
     "author": "UberMetroid",
-    "description": "A purple Windows logo exploding outward into chaotic particles and snapping back.",
-    "download_url": "https://github.com/tourian-dynamics/rScreensavers/releases/download/V1/win-unstable.scr",
-    "version": "1.0"
+    "description": "A dynamic OS logo exploding outward into chaotic particles (with new explosion types and side effects) and snapping back.",
+    "downloads": {
+      "windows": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/unstable.scr",
+      "linux": "https://github.com/tourian-dynamics/rScreensavers/releases/download/v2/unstable-linux.tar.gz"
+    },
+    "version": "2.0"
   }
 ]
