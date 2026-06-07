@@ -782,6 +782,7 @@ dependencies = [
 [[package]]
 name = "rcommon"
 version = "1.0.0"
+source = "git+https://github.com/local76/rCommon.git?branch=main#206820feddc2a7c274bd80985da4537ccc00062c"
 dependencies = [
  "crossterm",
  "ratatui",
@@ -819,7 +820,7 @@ checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
 name = "ridle"
-version = "2.6.3"
+version = "2.6.4"
 dependencies = [
  "clap",
  "crossterm",
