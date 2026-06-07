@@ -17,9 +17,15 @@ mod saver_win32;
 #[path = "saver_stub.rs"]
 mod saver_win32;
 
-/// Unified win32 module re-exporting common APIs and screensaver-specific APIs.
 pub mod win32 {
-    pub use rcommon::win32::*;
+    pub use rcommon::clipboard::copy_text_to_clipboard;
+    pub use rcommon::event_log::log_system_event as log_windows_event;
+    pub use rcommon::notification::show_toast_notification;
+    pub use rcommon::sys_info::{query_os_version, GlyphMap};
+    pub use rcommon::window::{
+        center_console_window, query_cursor_pos, get_window_rect, set_window_pos,
+        BorderlessConsole, SingleInstanceGuard, relaunch_in_conhost_if_needed,
+    };
     pub use crate::saver_win32::query_power_status;
     pub use crate::saver_win32::PowerStatus;
     pub use crate::saver_win32::RECT;

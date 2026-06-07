@@ -132,7 +132,7 @@ impl SystemMetrics {
             screen_h,
             dpi,
             window_dpi,
-            dark_mode: rcommon::win32::query_dark_mode(),
+            dark_mode: rcommon::sys_info::query_dark_mode(),
             high_contrast: query_high_contrast(),
             accent: query_accent_color(),
             power: query_power_status(),
