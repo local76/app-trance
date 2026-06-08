@@ -8,10 +8,7 @@
 
 use std::path::PathBuf;
 
-#[cfg(target_os = "windows")]
-use winreg::RegKey;
-#[cfg(target_os = "windows")]
-use winreg::enums::*;
+
 
 const REG_DESKTOP: &str = if cfg!(test) {
     "Software\\rIdle\\TestDesktop"
@@ -178,6 +175,8 @@ pub(crate) static TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(target_os = "windows")]
+    use winreg::{RegKey, enums::HKEY_CURRENT_USER};
 
     #[test]
     fn test_local_config_roundtrip() {

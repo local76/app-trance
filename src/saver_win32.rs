@@ -1,4 +1,4 @@
-#![allow(dead_code, non_snake_case)]
+#![allow(dead_code, non_snake_case, unused_imports)]
 use std::ptr::NonNull;
 use std::ffi::c_void;
 use windows_sys::Win32::Foundation::HWND;

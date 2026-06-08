@@ -1,21 +1,21 @@
 //! Ratatui-based rendering. Pure function of `App` -> `Frame`.
 //!
-//! # Model-Render Split
-//! rIdle uses a strict Model-Render architectural split:
-//!
-//! * **Model (`app.rs`)**: Owns the state (selected saver, timer configuration, focus, etc.)
-//!   and implements the business logic, key handlers, and state modifications.
-//! * **Render (`ui.rs`)**: Takes a mutable reference to the `App` state and draws the layout,
-//!   widgets, list view, borders, help texts, and active indicators to the screen.
+//! **Taxonomy Classification**: Interface (TUI / Main Rendering Layout).
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 
-use crate::app::{App, FocusedSection, GlobalField};
+use crate::app::App;
 
+pub mod panels;
+pub mod utils;
+
+pub use utils::truncate;
+
+/// Render the entire application interface to the Ratatui Frame.
 pub fn render(app: &mut App, frame: &mut Frame) {
     let area = frame.area();
     let theme = app.theme;
@@ -82,12 +82,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Span::styled(" │ ", Style::default().fg(theme.border)),
             Span::styled(os_str_val, Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD)),
             Span::styled(padding_str, Style::default()),
-            // Help button: " help " in yellow background, black text, underlined 'h'
             Span::styled(" ", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD)),
             Span::styled("h", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
             Span::styled("elp ", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD)),
             Span::styled(" │ ", Style::default().fg(theme.border)),
-            // Quit button: " quit " in red background, white text, underlined 'q'
             Span::styled(" ", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::styled("q", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
             Span::styled("uit ", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD)),
@@ -110,12 +108,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Span::styled(" │ ", Style::default().fg(theme.border)),
             Span::styled(os_str_val, Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD)),
             Span::styled(" │ ", Style::default().fg(theme.border)),
-            // Help button: " help " in yellow background, black text, underlined 'h'
             Span::styled(" ", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD)),
             Span::styled("h", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
             Span::styled("elp ", Style::default().bg(Color::Rgb(250, 210, 50)).fg(Color::Black).add_modifier(Modifier::BOLD)),
             Span::styled(" │ ", Style::default().fg(theme.border)),
-            // Quit button: " quit " in red background, white text, underlined 'q'
             Span::styled(" ", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD)),
             Span::styled("q", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD | Modifier::UNDERLINED)),
             Span::styled("uit ", Style::default().bg(Color::Rgb(255, 85, 85)).fg(Color::White).add_modifier(Modifier::BOLD)),
@@ -126,10 +122,10 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     frame.render_widget(Paragraph::new(header_line), header_inner);
 
     // 1. Render Global Screensaver Preferences (full width)
-    render_prefs(app, frame, chunks[1]);
+    panels::render_prefs(app, frame, chunks[1]);
 
     // 2. Render Screensaver Preferences List Table
-    render_list(app, frame, chunks[2]);
+    panels::render_list(app, frame, chunks[2]);
 
     // 3. Render Footer Status Box
     let footer_block = Block::default()
@@ -154,8 +150,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         }
     }
 
-    // Contextual hint for online/curated items (first-principles: keep table columns clean,
-    // show action in the status/feedback area when relevant).
     #[cfg(feature = "downloader")]
     let current_online_hint = if let Some(s) = app.screensavers.get(app.highlighted) {
         if s.download_url.is_some() && !s.path.exists() {
@@ -338,7 +332,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(theme.accent_primary));
 
-        // Render text lines scrollable
         let paragraph = Paragraph::new(app.markdown_lines.clone())
             .block(popup_block)
             .wrap(ratatui::widgets::Wrap { trim: true })
@@ -372,61 +365,61 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         let mut help_text = Vec::new();
         help_text.push(Line::from(""));
 
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "Tab / Shift-Tab",
             "Cycle active panel focus",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "Up / Down",
             "Navigate lists and preference fields",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "Left / Right",
             "Adjust settings and toggle flags",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "Space / Enter",
             "Toggle screensaver selection / Apply settings",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "p / t",
             "Preview highlighted screensaver",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "c / C",
             "Configure highlighted screensaver",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "d / D",
             "Delete downloaded screensaver from list",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "r / R",
             "Refresh screensavers list",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "Esc / q",
             "Close dialogs / Help Overlay, or Quit application",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "h / H",
             "Toggle this help shortcut overlay modal",
             max_desc_width,
@@ -434,43 +427,43 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         ));
 
         help_text.push(Line::from(""));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F1",
             "View README.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F2",
             "View SUPPORT.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F3",
             "View LICENSE.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F4",
             "View COPYRIGHT.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F5",
             "View PRIVACY.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F6",
             "View SECURITY.md document",
             max_desc_width,
             &theme,
         ));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "F7",
             "View CONTRIBUTING.md document",
             max_desc_width,
@@ -478,7 +471,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         ));
 
         help_text.push(Line::from(""));
-        help_text.extend(format_help_row(
+        help_text.extend(utils::format_help_row(
             "CLI Subcommands",
             "ridle.exe [tui | run | stop | toggle-active | lock | configure | preview | doctor]",
             max_desc_width,
@@ -514,162 +507,11 @@ fn render_too_small(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect
     );
 }
 
-fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
-    let theme = app.theme;
-    let active = app.focused == FocusedSection::GlobalPrefs;
-    let border_color = if active { theme.border_active } else { theme.border };
-
-    let prefs_block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color))
-        .title(Span::styled(
-            " Global Screensaver Preferences ",
-            Style::default().fg(if active { theme.accent_primary } else { theme.header }).add_modifier(Modifier::BOLD),
-        ));
-
-    let active_status = if app.global.active { "ACTIVE" } else { "DISABLED" };
-    let active_color = if app.global.active { theme.accent_secondary } else { theme.text_dim };
-    
-    let sleep_status = if app.local.prevent_sleep { "ACTIVE (SYSTEM AWAKE)" } else { "DISABLED (NORMAL)" };
-    let sleep_color = if app.local.prevent_sleep { theme.accent_secondary } else { theme.text_dim };
-    
-    let hide_stock_status = if app.local.hide_stock { "YES" } else { "NO" };
-    let hide_stock_color = if app.local.hide_stock { theme.accent_secondary } else { theme.text_dim };
-    
-    let timeout_value = format!("{} minutes", app.global.timeout / 60);
-    let cycle_time_value = format!("{} seconds", app.local.random_cycle_secs);
-
-    let mut lines = Vec::new();
-
-    let mut add_field = |field: GlobalField, label: &str, value: String, value_color: Color| {
-        let focused = active && app.global_field == field;
-        let arrow_span = Span::styled(if focused { app.glyphs.play } else { "   " }, Style::default().fg(theme.accent_primary));
-        let label_style = if focused {
-            Style::default().fg(theme.accent_secondary).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(theme.text_main)
-        };
-        lines.push(Line::from(vec![
-            arrow_span,
-            Span::styled(label.to_string(), label_style),
-            Span::styled(" ", Style::default()),
-            Span::styled(value, Style::default().fg(value_color)),
-        ]));
-    };
-
-    add_field(GlobalField::Active,       "Active:        ", active_status.to_string(), active_color);
-    add_field(GlobalField::Timeout,      "Timeout:       ", timeout_value, theme.accent_primary);
-    add_field(GlobalField::PreventSleep, "Prevent sleep: ", sleep_status.to_string(), sleep_color);
-    add_field(GlobalField::CycleTime,    "Cycle time:    ", cycle_time_value, theme.accent_primary);
-    add_field(GlobalField::HideStock,    "Hide stock:    ", hide_stock_status.to_string(), hide_stock_color);
-
-    let prefs_inner = prefs_block.inner(area);
-    frame.render_widget(prefs_block, area);
-    frame.render_widget(Paragraph::new(lines), prefs_inner);
-}
-
-fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
-    let theme = app.theme;
-    let active = app.focused == FocusedSection::SaverList;
-    let border_color = if active { theme.border_active } else { theme.border };
-
-    let list_block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(border_color))
-        .title(Span::styled(
-            " Screensaver Preferences ",
-            Style::default().fg(if active { theme.accent_primary } else { theme.header }).add_modifier(Modifier::BOLD),
-        ));
-
-    let list_inner = list_block.inner(area);
-    frame.render_widget(list_block, area);
-
-    let list_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(1), // Table Header
-            Constraint::Min(1),    // List Items
-        ])
-        .split(list_inner);
-
-    // Table Header - simplified per user request:
-    // Active (yes or no) | Name | Type (stock or custom)
-    let header_line = Line::from(vec![
-        Span::raw("   "),
-        Span::styled("ACTIVE    ", if active { theme.accent_primary } else { theme.header }),
-        Span::styled("NAME                              ", Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD)),
-        Span::styled("TYPE", Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD)),
-    ]);
-    frame.render_widget(Paragraph::new(header_line), list_chunks[0]);
-
-    let indices = app.filtered_indices();
-
-    if indices.is_empty() {
-        let text = vec![
-            Line::from("  No .scr files found."),
-            Line::from(Span::styled(
-                "  Drop one into %APPDATA%\\rIdle\\screensavers",
-                Style::default().fg(theme.text_dim),
-            )),
-        ];
-        frame.render_widget(Paragraph::new(text).wrap(Wrap { trim: false }), list_chunks[1]);
-        return;
-    }
-
-    let total_items = indices.len();
-    let visible_height = list_chunks[1].height as usize;
-    let selected_pos = indices
-        .iter()
-        .position(|&i| i == app.highlighted)
-        .unwrap_or(0);
-
-    // Adjust list_offset to keep selected_pos in view
-    if selected_pos < app.list_offset {
-        app.list_offset = selected_pos;
-    } else if selected_pos >= app.list_offset + visible_height {
-        app.list_offset = selected_pos - visible_height + 1;
-    }
-    if app.list_offset + visible_height > total_items {
-        app.list_offset = total_items.saturating_sub(visible_height);
-    }
-
-    let start = app.list_offset;
-    let end = (start + visible_height).min(total_items);
-    let visible_indices = &indices[start..end];
-
-    let items: Vec<ListItem> = visible_indices
-        .iter()
-        .map(|&i| app.list_items[i].clone())
-        .collect();
-
-    let mut state = ListState::default().with_selected(Some(selected_pos.saturating_sub(start)));
-    let list = List::new(items)
-        .highlight_style(
-            Style::default()
-                .fg(theme.text_main)
-                .bg(theme.bg)
-                .add_modifier(Modifier::BOLD),
-        )
-        .highlight_symbol(if active { app.glyphs.play } else { app.glyphs.play_empty });
-    frame.render_stateful_widget(list, list_chunks[1], &mut state);
-}
-
-pub fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        s.to_string()
-    } else {
-        let mut out: String = s.chars().take(max.saturating_sub(1)).collect();
-        out.push('…');
-        out
-    }
-}
-
 fn centered_rect(
     percent_x: u16,
     percent_y: u16,
-    r: ratatui::layout::Rect,
-) -> ratatui::layout::Rect {
-    use ratatui::layout::{Constraint, Direction, Layout};
+    r: Rect,
+) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -687,76 +529,4 @@ fn centered_rect(
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1]
-}
-
-fn format_help_row(
-    key: &str,
-    description: &str,
-    max_desc_width: usize,
-    theme: &crate::theme::TuiTheme,
-) -> Vec<Line<'static>> {
-    let wrapped = wrap_text(description, max_desc_width);
-    let mut lines = Vec::new();
-
-    let key_col_width = 18;
-    let key_str = format!("  {:<15} ", key);
-
-    if wrapped.is_empty() {
-        lines.push(Line::from(vec![
-            Span::styled(
-                key_str,
-                Style::default()
-                    .fg(theme.accent_primary)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(": ", Style::default().fg(theme.text_main)),
-        ]));
-    } else {
-        for (i, chunk) in wrapped.into_iter().enumerate() {
-            if i == 0 {
-                lines.push(Line::from(vec![
-                    Span::styled(
-                        key_str.clone(),
-                        Style::default()
-                            .fg(theme.accent_primary)
-                            .add_modifier(Modifier::BOLD),
-                    ),
-                    Span::styled(": ", Style::default().fg(theme.text_main)),
-                    Span::styled(chunk, Style::default().fg(theme.text_main)),
-                ]));
-            } else {
-                let padding = " ".repeat(key_col_width + 2);
-                lines.push(Line::from(vec![
-                    Span::styled(padding, Style::default().fg(theme.text_main)),
-                    Span::styled(chunk, Style::default().fg(theme.text_main)),
-                ]));
-            }
-        }
-    }
-    lines
-}
-
-fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
-    let mut lines = Vec::new();
-    if max_width == 0 {
-        return vec![text.to_string()];
-    }
-    for paragraph in text.split('\n') {
-        let mut current_line = String::new();
-        for word in paragraph.split_whitespace() {
-            if current_line.is_empty() {
-                current_line.push_str(word);
-            } else if current_line.len() + 1 + word.len() <= max_width {
-                current_line.push(' ');
-                current_line.push_str(word);
-            } else {
-                lines.push(current_line);
-                current_line = word.to_string();
-            }
-        }
-        if !current_line.is_empty() {
-            lines.push(current_line);
-        }
-    }
-    lines
 }

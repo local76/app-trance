@@ -243,9 +243,9 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
                 .map(|p| p.join("rIdle-tui"))
         };
 
-        base.and_then(|parent| {
+        base.map(|parent| {
             let filename = download_url.split('/').next_back().unwrap_or("screensaver.bin").to_string();
-            Some(parent.join("screensavers").join(filename))
+            parent.join("screensavers").join(filename)
         })
     };
 
@@ -267,11 +267,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
                 // Parse file path from file:// URL
                 let file_path_str = download_url.trim_start_matches("file://").trim_start_matches("file:/");
                 // On Windows, file:///C:/path/to/file or file://C:/path/to/file or file:/C:/path/to/file
-                let file_path_str = if file_path_str.starts_with('/') {
-                    &file_path_str[1..]
-                } else {
-                    file_path_str
-                };
+                let file_path_str = file_path_str.strip_prefix('/').unwrap_or(file_path_str);
                 let decoded_path = file_path_str.replace("%20", " ");
                 let src_path = PathBuf::from(decoded_path);
 

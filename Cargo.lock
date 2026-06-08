@@ -781,7 +781,7 @@ dependencies = [
 
 [[package]]
 name = "rcommon"
-version = "3.0.16"
+version = "3.4.4"
 dependencies = [
  "crossterm",
  "ratatui",
