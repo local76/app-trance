@@ -598,6 +598,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
+name = "library"
+version = "4.2.0"
+dependencies = [
+ "crossterm",
+ "ratatui",
+ "rusqlite",
+ "sysinfo",
+ "windows",
+ "windows-sys 0.59.0",
+ "winreg 0.56.0",
+]
+
+[[package]]
 name = "libsqlite3-sys"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -839,19 +852,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rcommon"
-version = "4.2.0"
-dependencies = [
- "crossterm",
- "ratatui",
- "rusqlite",
- "sysinfo",
- "windows",
- "windows-sys 0.59.0",
- "winreg 0.56.0",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -876,27 +876,6 @@ name = "regex-syntax"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
-
-[[package]]
-name = "ridle-tui"
-version = "2.6.6"
-dependencies = [
- "clap",
- "crossterm",
- "ratatui",
- "rcommon",
- "serde",
- "serde_json",
- "sysinfo",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "ureq",
- "windows",
- "windows-sys 0.59.0",
- "winreg 0.52.0",
- "winres",
-]
 
 [[package]]
 name = "ring"
@@ -1333,6 +1312,27 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "trance"
+version = "2.6.8"
+dependencies = [
+ "clap",
+ "crossterm",
+ "library",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "ureq",
+ "windows",
+ "windows-sys 0.59.0",
+ "winreg 0.52.0",
+ "winres",
 ]
 
 [[package]]
