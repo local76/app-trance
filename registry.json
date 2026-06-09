@@ -5,10 +5,10 @@
     "description": "Sweeping vertical colored spotlights in purple, blue, and pink. Now features a live dynamic OS name and kernel subtext logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/beams.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-beams_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-beams-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-beams_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-beams-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "bounce",
@@ -16,10 +16,10 @@
     "description": "Cyberpunk Neon Pink and Cyan Hacker TUI with scrolling live Bhop game panel and full system diagnostics (including GPUs and monitors).",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/bounce.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-bounce_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-bounce-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-bounce_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-bounce-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "flame",
@@ -27,10 +27,10 @@
     "description": "Majestic Doom fire simulation sweeping upward, reacting to system load with a live dynamic OS logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/flame.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-flame_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-flame-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-flame_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-flame-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "bursts",
@@ -38,10 +38,10 @@
     "description": "Cozy city skyline silhouette with warm lit windows and exploding fireworks illuminating the live OS logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/bursts.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-bursts_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-bursts-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-bursts_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-bursts-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "cosmos",
@@ -49,10 +49,10 @@
     "description": "Conway's Game of Life simulated on a grid with nebula trails, interacting with the live dynamic OS logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/cosmos.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-cosmos_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-cosmos-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-cosmos_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-cosmos-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "glyphs",
@@ -60,10 +60,10 @@
     "description": "Dense Matrix-style falling digital rain using system environment variables and live system data, over the dynamic OS logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/glyphs.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-glyphs_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-glyphs-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-glyphs_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-glyphs-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "disco",
@@ -71,10 +71,10 @@
     "description": "Rave party simulation featuring twinkling background stars, a disco ball, and the live dynamic OS logo.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/disco.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-disco_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-disco-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-disco_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-disco-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "storm",
@@ -82,10 +82,10 @@
     "description": "Waterfall cascade of characters (including live system data) assembling the dynamic OS logo and kernel.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/storm.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-storm_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-storm-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-storm_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-storm-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "chaos",
@@ -93,10 +93,10 @@
     "description": "A dynamic OS logo exploding outward into chaotic particles (with new explosion types and side effects) and snapping back.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/chaos.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-chaos_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-chaos-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-chaos_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-chaos-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   },
   {
     "name": "gnats",
@@ -104,9 +104,9 @@
     "description": "Harmonious pulsing Lissajous particle orbits with glowing wireframe connector lines, dynamically adjusting to system DWM colors.",
     "downloads": {
       "windows": "file:///C:/Users/jeryd/Synology/Home/Projects/local76/screensavers/dist/binaries/gnats.scr",
-      "linux-deb": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-gnats_1.0.0_amd64.deb",
-      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v1.0.0/scene-gnats-1.0.0-1.x86_64.rpm"
+      "linux-deb": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-gnats_2026.6.9_amd64.deb",
+      "linux-rpm": "https://github.com/local76/screensavers/releases/download/v2026.6.9/scene-gnats-2026.6.9-1.x86_64.rpm"
     },
-    "version": "v1.0.0"
+    "version": "v2026.6.9"
   }
 ]
