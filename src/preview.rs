@@ -62,7 +62,7 @@ fn search_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
 
     if let Ok(appdata) = std::env::var("APPDATA") {
-        dirs.push(PathBuf::from(appdata).join("trance-tui").join("screensavers"));
+        dirs.push(PathBuf::from(appdata).join("trance").join("screensavers"));
     }
 
     if let Ok(system_root) = std::env::var("SystemRoot") {
