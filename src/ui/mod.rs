@@ -43,7 +43,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.border))
         .title(Span::styled(
-            " rIdle - Screensaver Manager ",
+            " trance - Screensaver Manager ",
             Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD),
         ));
     
@@ -51,7 +51,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let hostname = &app.hostname;
     let os_str_val = app.os_version.clone();
 
-    let ver_str = format!("rIdle v{}", env!("CARGO_PKG_VERSION"));
+    let ver_str = format!("trance v{}", env!("CARGO_PKG_VERSION"));
     let user_host_str = format!("{}@{}", username, hostname);
 
     let button_y = chunks[0].y + 1;
@@ -472,7 +472,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         help_text.push(Line::from(""));
         help_text.extend(utils::format_help_row(
             "CLI Subcommands",
-            "ridle.exe [tui | run | stop | toggle-active | lock | configure | preview | doctor]",
+            "trance.exe [tui | run | stop | toggle-active | lock | configure | preview | doctor]",
             max_desc_width,
             &theme,
         ));

@@ -1,4 +1,4 @@
-//! Main event loop and TUI runner for rIdle.
+//! Main event loop and TUI runner for trance.
 //!
 //! **Taxonomy Classification**: Interface (TUI / Presentation Layer).
 
@@ -62,7 +62,7 @@ pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::E
         }
     };
 
-    let _title_guard = ConsoleTitleGuard::new("rIdle");
+    let _title_guard = ConsoleTitleGuard::new("trance");
 
     let screensavers = preview::discover();
 
@@ -158,9 +158,9 @@ pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::E
                     } else {
                         format!("Successfully downloaded: {}", downloaded_name)
                     };
-                    win32::show_toast_notification("rIdle - Download Completed", &_toast_msg);
+                    win32::show_toast_notification("trance - Download Completed", &_toast_msg);
                     win32::log_windows_event(
-                        "rIdle",
+                        "trance",
                         4, // EVENTLOG_INFORMATION_TYPE
                         1001,
                         &format!("Successfully downloaded: {}", downloaded_name),
@@ -171,7 +171,7 @@ pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::E
                     // Re-locate the just-downloaded saver by name (case-insensitive match on
                     // saver name or the basename/stem of its path) so that the pending action
                     // (apply/preview/...) and the highlight operate on the correct item after
-                    // discover + merge have rebuilt and re-sorted the list. This makes rIdle
+                    // discover + merge have rebuilt and re-sorted the list. This makes trance
                     // "know where the new screensavers are located" after a download lands.
                     if !downloaded_name.is_empty() {
                         if let Some(pos) = app.screensavers.iter().position(|s| {
@@ -214,11 +214,11 @@ pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::E
                     }
                 } else if let Some(msg) = err_msg {
                     win32::show_toast_notification(
-                        "rIdle - Download Failed",
+                        "trance - Download Failed",
                         &format!("Failed to download {}: {}", downloaded_name, msg),
                     );
                     win32::log_windows_event(
-                        "rIdle",
+                        "trance",
                         1, // EVENTLOG_ERROR_TYPE
                         1002,
                         &format!("Failed to download {}: {}", downloaded_name, msg),

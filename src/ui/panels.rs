@@ -102,7 +102,7 @@ pub fn render_list(app: &mut App, frame: &mut Frame, area: Rect) {
         let text = vec![
             Line::from("  No .scr files found."),
             Line::from(Span::styled(
-                "  Drop one into %APPDATA%\\rIdle\\screensavers",
+                "  Drop one into %APPDATA%\\trance\\screensavers",
                 Style::default().fg(theme.text_dim),
             )),
         ];

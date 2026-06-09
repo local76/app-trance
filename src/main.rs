@@ -1,4 +1,4 @@
-//! rIdle — Windows Screensaver Manager.
+//! trance — Windows Screensaver Manager.
 //!
 //! Standalone TUI for configuring any Windows screensaver.
 
@@ -46,7 +46,7 @@ use crate::config::{GlobalConfig, LocalConfig};
 /// Screen saver management for Windows.
 #[derive(Parser, Debug)]
 #[command(
-    name = "ridle",
+    name = "trance",
     version,
     about,
     long_about = None,
@@ -96,7 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _guard = init_tracing();
     install_panic_hook();
     let cli = Cli::parse_from(pre_munge_args(std::env::args().collect()));
-    info!(?cli, "ridle start");
+    info!(?cli, "trance start");
 
     let command = cli.command.unwrap_or(Command::Tui);
     let result: Result<(), Box<dyn std::error::Error>> = match command {
@@ -111,13 +111,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if let Err(ref e) = result {
-        error!(error = %e, "ridle failed");
+        error!(error = %e, "trance failed");
     }
     result
 }
 
 /// Translate Windows `.scr` calling-convention flags (`/s`, `/c`, `/p`) into
-/// clap subcommand names so `ridle.exe /s` works the same as `ridle.exe run`.
+/// clap subcommand names so `trance.exe /s` works the same as `trance.exe run`.
 fn pre_munge_args(args: Vec<String>) -> Vec<String> {
     let mut args = args;
     args.retain(|arg| arg != "--relaunched");
@@ -148,8 +148,8 @@ fn pre_munge_args(args: Vec<String>) -> Vec<String> {
 /// the TUI.
 fn init_tracing() -> WorkerGuard {
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("rIdle.log")))
-        .unwrap_or_else(|| PathBuf::from("rIdle.log"));
+        .and_then(|p| p.parent().map(|p| p.join("trance.log")))
+        .unwrap_or_else(|| PathBuf::from("trance.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

@@ -1,1 +1,1 @@
-https://github.com/local76/rIdle/pulls
+https://github.com/local76/trance/pulls

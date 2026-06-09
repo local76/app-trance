@@ -52,21 +52,21 @@
 
 │   ├── binaries/                                     # Folder for raw, un-packaged compiled executables
 
-│   │   ├── ridle                                 # Compiled raw binary for Linux
+│   │   ├── trance                                 # Compiled raw binary for Linux
 
-│   │   └── ridle.exe                             # Compiled raw binary for Windows
+│   │   └── trance.exe                             # Compiled raw binary for Windows
 
 │   └── packages/                                     # Folder for final bundled distribution formats
 
-│       ├── ridle.apk                             # Compiled Alpine Linux package
+│       ├── trance.apk                             # Compiled Alpine Linux package
 
-│       ├── ridle.appimage                        # Compiled universal Linux portable executable
+│       ├── trance.appimage                        # Compiled universal Linux portable executable
 
-│       ├── ridle.deb                             # Compiled Debian/Ubuntu installation package
+│       ├── trance.deb                             # Compiled Debian/Ubuntu installation package
 
-│       ├── ridle.msi                             # Compiled Windows installer package
+│       ├── trance.msi                             # Compiled Windows installer package
 
-│       └── ridle.rpm                             # Compiled RedHat/Fedora installation package
+│       └── trance.rpm                             # Compiled RedHat/Fedora installation package
 
 ├── docs/                                             # Deep-dive documentation for users/contributors
 
@@ -98,15 +98,15 @@
 
 │   │   ├── generate-completions.sh                   # Script to auto-generate below files via Rust 'clap'
 
-│   │   ├── ridle.bash                            # Auto-completion logic for Bash shell
+│   │   ├── trance.bash                            # Auto-completion logic for Bash shell
 
-│   │   ├── ridle.fish                            # Auto-completion logic for Fish shell
+│   │   ├── trance.fish                            # Auto-completion logic for Fish shell
 
-│   │   ├── ridle.nu                              # Auto-completion logic for Nushell
+│   │   ├── trance.nu                              # Auto-completion logic for Nushell
 
-│   │   ├── ridle.ps1                             # Auto-completion logic for PowerShell
+│   │   ├── trance.ps1                             # Auto-completion logic for PowerShell
 
-│   │   └── ridle.zsh                             # Auto-completion logic for Zsh shell
+│   │   └── trance.zsh                             # Auto-completion logic for Zsh shell
 
 │   ├── deb/                                          # Debian/Ubuntu package environment
 
@@ -122,15 +122,15 @@
 
 │   ├── desktop/                                      # Standard Linux desktop integration files
 
-│   │   ├── ridle.1                               # Linux man page documentation for terminal users
+│   │   ├── trance.1                               # Linux man page documentation for terminal users
 
-│   │   └── ridle.desktop                         # Linux application launcher shortcut and metadata
+│   │   └── trance.desktop                         # Linux application launcher shortcut and metadata
 
 │   ├── flatpak/                                      # Flatpak sandboxed application environment
 
 │   │   ├── build-flatpak.sh                          # Isolated script to execute 'flatpak-builder'
 
-│   │   └── org.local76.ridle.yaml                # Flatpak manifest defining dependencies
+│   │   └── org.local76.trance.yaml                # Flatpak manifest defining dependencies
 
 │   ├── nix/                                          # NixOS / Nix package manager environment
 
@@ -142,7 +142,7 @@
 
 │   │   ├── build-redhat-rpm.sh                       # Isolated script to set up rpmbuild tree and execute
 
-│   │   └── ridle.spec                            # RPM specification file (Name, Version, %prep, %build)
+│   │   └── trance.spec                            # RPM specification file (Name, Version, %prep, %build)
 
 │   ├── winget/                                       # Windows Package Manager environment
 

@@ -1,4 +1,4 @@
-//! Diagnostic and repair tools for rIdle.
+//! Diagnostic and repair tools for trance.
 //!
 //! **Taxonomy Classification**: Interface (CLI / Diagnostics Layer).
 
@@ -16,7 +16,7 @@ use crate::win32;
 
 /// Run the doctor diagnostic check.
 pub fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
-    println!("rIdle Doctor — Diagnostic Report");
+    println!("trance Doctor — Diagnostic Report");
     println!("=============================");
 
     // 1. Check Registry/Config Access
@@ -85,11 +85,11 @@ pub fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     println!("\nDiscovery Directories:");
     if let Ok(appdata) = std::env::var("APPDATA") {
         let rsaver_dir = PathBuf::from(appdata)
-            .join("rIdle")
+            .join("trance")
             .join("screensavers");
         let exists = rsaver_dir.exists();
         println!(
-            "  - %APPDATA%/rIdle/screensavers: {}",
+            "  - %APPDATA%/trance/screensavers: {}",
             if exists { "EXISTS" } else { "NOT FOUND" }
         );
         if !exists && fix {
@@ -133,8 +133,8 @@ pub fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
     // 4. Log File Check
     print!("\nLog File Writable:       ");
     let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("rIdle.log")))
-        .unwrap_or_else(|| PathBuf::from("rIdle.log"));
+        .and_then(|p| p.parent().map(|p| p.join("trance.log")))
+        .unwrap_or_else(|| PathBuf::from("trance.log"));
     if let Some(parent) = log_path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -149,7 +149,7 @@ pub fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
 
     // 4.5 Clipboard Write Access
     print!("Windows Clipboard:        ");
-    match win32::copy_text_to_clipboard("rIdle Diagnostic Test Connection") {
+    match win32::copy_text_to_clipboard("trance Diagnostic Test Connection") {
         Ok(_) => println!("OK (Writable)"),
         Err(e) => println!("FAILED (Error: {})", e),
     }

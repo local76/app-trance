@@ -475,7 +475,7 @@ mod tests {
     fn test_selection_and_apply() {
         let _lock = crate::config::TEST_LOCK.lock().unwrap();
         let temp_dir = std::env::temp_dir().join(format!(
-            "ridle_test_app_{}",
+            "trance_test_app_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -516,7 +516,7 @@ mod tests {
     fn test_registry_merge_and_automated_downloader() {
         let _lock = crate::config::TEST_LOCK.lock().unwrap();
         let temp_dir = std::env::temp_dir().join(format!(
-            "ridle_test_app_downloader_{}",
+            "trance_test_app_downloader_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

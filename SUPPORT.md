@@ -1,1 +1,1 @@
-https://github.com/local76/rIdle/issues
+https://github.com/local76/trance/issues

@@ -3,15 +3,15 @@
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
 //!    (On Linux this is a no-op / stub for now.)
 //!  - `LocalConfig` lives at platform-appropriate config location
-//!    (`%APPDATA%\rIdle\config.yaml` on Windows, `~/.config/rIdle/config.yaml` on Linux)
-//!    and tracks ridle-specific preferences (last selection, prevent-sleep, feed URLs).
+//!    (`%APPDATA%\trance\config.yaml` on Windows, `~/.config/trance/config.yaml` on Linux)
+//!    and tracks trance-specific preferences (last selection, prevent-sleep, feed URLs).
 
 use std::path::PathBuf;
 
 
 
 const REG_DESKTOP: &str = if cfg!(test) {
-    "Software\\rIdle\\TestDesktop"
+    "Software\\trance\\TestDesktop"
 } else {
     "Control Panel\\Desktop"
 };
@@ -91,7 +91,7 @@ impl Default for LocalConfig {
             selected_paths: Vec::new(),
             hide_stock: false,
             feed_urls: vec![
-                "https://raw.githubusercontent.com/local76/rIdle/main/registry.json".to_string()
+                "https://raw.githubusercontent.com/local76/trance/main/registry.json".to_string()
             ],
         }
     }
@@ -101,7 +101,7 @@ impl LocalConfig {
     pub fn config_path() -> Option<PathBuf> {
         if cfg!(target_os = "windows") {
             let appdata = std::env::var("APPDATA").ok()?;
-            Some(PathBuf::from(appdata).join("rIdle").join("config.yaml"))
+            Some(PathBuf::from(appdata).join("trance").join("config.yaml"))
         } else {
             // Linux / macOS XDG
             let base = std::env::var("XDG_CONFIG_HOME")
@@ -109,7 +109,7 @@ impl LocalConfig {
                 .map(PathBuf::from)
                 .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".config")))
                 .unwrap_or_else(|| PathBuf::from(".config"));
-            Some(base.join("rIdle").join("config.yaml"))
+            Some(base.join("trance").join("config.yaml"))
         }
     }
 
@@ -183,7 +183,7 @@ mod tests {
         let _lock = TEST_LOCK.lock().unwrap();
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
-            "ridle_test_{}",
+            "trance_test_{}",
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -243,7 +243,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     fn test_global_config_roundtrip() {
         let _lock = TEST_LOCK.lock().unwrap();
-        // REG_DESKTOP is redirected to "Software\rIdle\TestDesktop" in test mode
+        // REG_DESKTOP is redirected to "Software\trance\TestDesktop" in test mode
         let config = GlobalConfig {
             active_scr: "C:\\Windows\\System32\\bubbles.scr".to_string(),
             active: true,
@@ -260,6 +260,6 @@ mod tests {
         assert_eq!(loaded.timeout, 300);
 
         // Clean up test key in registry
-        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\rIdle\\TestDesktop");
+        let _ = RegKey::predef(HKEY_CURRENT_USER).delete_subkey("Software\\trance\\TestDesktop");
     }
 }

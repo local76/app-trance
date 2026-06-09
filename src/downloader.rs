@@ -1,6 +1,6 @@
 //! Downloader module for curated screensavers from the registry.
 //! Supports platform-specific downloads (windows, linux, linux-deb, linux-rpm, linux-arch)
-//! so rIdle can fetch the correct binary or package for the current OS.
+//! so trance can fetch the correct binary or package for the current OS.
 //!
 //! Registry entries can specify a `downloads` map (preferred) or legacy `download_url`.
 //! On Linux, best_linux_variant() prefers deb/rpm/arch packages when the matching
@@ -193,7 +193,7 @@ pub fn load_local_registry() -> Result<Vec<RegistryEntry>, Box<dyn std::error::E
         return Ok(entries);
     }
 
-    // Try next to the exe, and walk up parents (handles running target/release/ridle.exe)
+    // Try next to the exe, and walk up parents (handles running target/release/trance.exe)
     if let Ok(exe) = std::env::current_exe() {
         let mut dir = exe.parent().map(|p| p.to_path_buf());
         while let Some(d) = dir {
@@ -240,7 +240,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
                 .ok()
                 .map(PathBuf::from)
                 .or_else(|| std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".local/share")))
-                .map(|p| p.join("rIdle-tui"))
+                .map(|p| p.join("trance-tui"))
         };
 
         base.map(|parent| {
@@ -297,7 +297,7 @@ pub fn spawn_download(entry: &RegistryEntry) -> Arc<Mutex<DownloadState>> {
                 }
             } else {
                 let response = ureq::get(&download_url)
-                    .set("User-Agent", "rIdle/2.6.4 (+https://github.com/local76)")
+                    .set("User-Agent", "trance/2.6.4 (+https://github.com/local76)")
                     .call()?;
                 total_bytes = response
                     .header("Content-Length")

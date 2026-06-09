@@ -156,7 +156,7 @@ fn query_high_contrast() -> bool {
 }
 
 fn query_accent_color() -> Rgb {
-    // Delegate to rcommon (which uses DWM internally when "widgets" + "sys-info" features are enabled).
+    // Delegate to library (which uses DWM internally when "widgets" + "sys-info" features are enabled).
     // Convert ratatui Color::Rgb back to our local Rgb for the palette.
     match library::sys_info::get_dwm_accent_color() {
         ratatui::style::Color::Rgb(r, g, b) => Rgb(r, g, b),
@@ -165,7 +165,7 @@ fn query_accent_color() -> Rgb {
 }
 
 pub fn query_power_status() -> PowerStatus {
-    // Delegate to rcommon for the common power query logic (reduces duplication of GetSystemPowerStatus).
+    // Delegate to library for the common power query logic (reduces duplication of GetSystemPowerStatus).
     if let Some(p) = library::sys_info::query_power_status() {
         PowerStatus {
             ac_online: p.ac_online,
@@ -262,7 +262,7 @@ impl CycleMask {
         };
         use windows_sys::Win32::Graphics::Gdi::{GetStockObject, BLACK_BRUSH, HBRUSH};
 
-        let class_name: Vec<u16> = "ridle_mask_class\0".encode_utf16().collect();
+        let class_name: Vec<u16> = "trance_mask_class\0".encode_utf16().collect();
 
         unsafe {
             let wnd_class = WNDCLASSW {
