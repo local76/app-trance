@@ -158,6 +158,9 @@ pub struct App {
     pub drag_start_cursor: Option<(i32, i32)>,
     /// Console window coordinates on drag start.
     pub drag_start_window: Option<(i32, i32)>,
+    pub username: String,
+    pub hostname: String,
+    pub os_version: String,
 }
 
 impl App {
@@ -258,6 +261,9 @@ impl App {
             drag_active: false,
             drag_start_cursor: None,
             drag_start_window: None,
+            username: std::env::var("USERNAME").unwrap_or_else(|_| std::env::var("USER").unwrap_or_else(|_| "user".to_string())),
+            hostname: std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string()),
+            os_version: crate::win32::query_os_version(),
         };
         app.update_list_items();
         app

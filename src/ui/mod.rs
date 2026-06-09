@@ -47,13 +47,12 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD),
         ));
     
-    let username = std::env::var("USERNAME").unwrap_or_else(|_| std::env::var("USER").unwrap_or_else(|_| "user".to_string()));
-    let hostname = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string());
-    let os_str = crate::win32::query_os_version();
+    let username = &app.username;
+    let hostname = &app.hostname;
+    let os_str_val = app.os_version.clone();
 
     let ver_str = format!("rIdle v{}", env!("CARGO_PKG_VERSION"));
     let user_host_str = format!("{}@{}", username, hostname);
-    let os_str_val = os_str;
 
     let button_y = chunks[0].y + 1;
     let inner_width = chunks[0].width.saturating_sub(2) as usize;
