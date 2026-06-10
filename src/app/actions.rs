@@ -222,7 +222,12 @@ impl App {
         let Some(s) = self.current_screensaver() else {
             return;
         };
-        if let Err(e) = std::process::Command::new(&s.path).arg("/s").spawn() {
+        #[cfg(target_os = "windows")]
+        let spawn_res = std::process::Command::new(&s.path).arg("/s").spawn();
+        #[cfg(not(target_os = "windows"))]
+        let spawn_res = crate::win32::spawn_linux_screensaver(&s.path, "/s");
+
+        if let Err(e) = spawn_res {
             self.status = Some(StatusMessage {
                 text: format!("Preview failed: {e}"),
                 kind: StatusKind::Error,

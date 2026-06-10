@@ -16,3 +16,9 @@ pub use crate::backend::saver_win32::query_power_status;
 pub use crate::backend::saver_win32::PowerStatus;
 pub use crate::backend::saver_win32::RECT;
 pub use crate::backend::saver_win32::*;
+
+#[cfg(target_os = "windows")]
+#[allow(dead_code)]
+pub fn spawn_linux_screensaver(_path: &std::path::Path, _arg: &str) -> std::io::Result<std::process::Child> {
+    Err(std::io::Error::new(std::io::ErrorKind::Unsupported, "spawn_linux_screensaver is not supported on Windows"))
+}

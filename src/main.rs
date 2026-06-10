@@ -176,8 +176,16 @@ fn run_active_screensaver(lock_first: bool) -> std::io::Result<()> {
     if is_self {
         app::run_random_cycle();
     } else {
-        let mut child = std::process::Command::new(&path).arg("/s").spawn()?;
-        let _ = child.wait();
+        #[cfg(target_os = "windows")]
+        {
+            let mut child = std::process::Command::new(&path).arg("/s").spawn()?;
+            let _ = child.wait();
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let mut child = win32::spawn_linux_screensaver(&path, "/s")?;
+            let _ = child.wait();
+        }
     }
     Ok(())
 }

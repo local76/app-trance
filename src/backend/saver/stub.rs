@@ -120,3 +120,41 @@ impl CycleMask {
         Some(CycleMask {})
     }
 }
+
+fn command_exists(cmd: &str) -> bool {
+    std::process::Command::new("sh")
+        .arg("-c")
+        .arg(format!("command -v {} >/dev/null 2>&1", cmd))
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+pub fn spawn_linux_screensaver(path: &std::path::Path, arg: &str) -> std::io::Result<std::process::Child> {
+    // Detect terminal emulator
+    let emulators = [
+        ("alacritty", vec!["-o", "window.startup_mode=Fullscreen", "-e"]),
+        ("kitty", vec!["--start-as=fullscreen"]),
+        ("gnome-terminal", vec!["--full-screen", "--"]),
+        ("xfce4-terminal", vec!["--fullscreen", "-e"]),
+        ("konsole", vec!["--fullscreen", "-e"]),
+        ("xterm", vec!["-fullscreen", "-e"]),
+    ];
+
+    for (name, args) in &emulators {
+        if command_exists(name) {
+            let mut cmd = std::process::Command::new(name);
+            cmd.args(args);
+            cmd.arg(path);
+            if !arg.is_empty() {
+                cmd.arg(arg);
+            }
+            if let Ok(child) = cmd.spawn() {
+                return Ok(child);
+            }
+        }
+    }
+
+    // Fallback: spawn directly
+    std::process::Command::new(path).arg(arg).spawn()
+}
