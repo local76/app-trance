@@ -44,7 +44,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    /// Launch the TUI dashboard (default).
+    /// Launch the app dashboard (default).
     Tui,
     /// Launch the active screensaver fullscreen.
     #[command(alias = "start", alias = "s", alias = "S")]

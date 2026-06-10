@@ -346,7 +346,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     if app.show_help {
         let area = centered_rect(65, 75, frame.area());
         let popup_block = Block::default()
-            .title(" Keyboard Shortcuts & TUI Commands ")
+            .title(" Keyboard Shortcuts & App Commands ")
             .title_style(
                 Style::default()
                     .fg(theme.accent_primary)

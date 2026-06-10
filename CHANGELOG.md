@@ -11,10 +11,10 @@ All notable changes to this project will be documented in this file.
 ## [2026.6.9] - 2026-06-09
 
 ### Renamed
-- **Project rename**: `trance` was previously `trance-tui` / `rIdle`. The Cargo package name, binary name, file paths, registry keys, AppData paths, and docs are now lowercase `trance`. Behavior and features are unchanged.
+- **Project rename**: `trance` was previously `trance-App` / `rIdle`. The Cargo package name, binary name, file paths, registry keys, AppData paths, and docs are now lowercase `trance`. Behavior and features are unchanged.
 
 ### Refactored
-- **TUI Blueprint alignment**: Re-architected directory and module tree to standard TUI layout. Renamed `src/ui/panels.rs` to `src/ui/widgets.rs`. Created `src/backend/` directory, moving `src/runner.rs` to `src/backend/mod.rs`, `src/preview.rs` to `src/backend/preview.rs`, the Windows and mock screensaver modules to `src/backend/saver/`, and the downloader modules to `src/backend/downloader/`.
+- **App Blueprint alignment**: Re-architected directory and module tree to standard App layout. Renamed `src/ui/panels.rs` to `src/ui/widgets.rs`. Created `src/backend/` directory, moving `src/runner.rs` to `src/backend/mod.rs`, `src/preview.rs` to `src/backend/preview.rs`, the Windows and mock screensaver modules to `src/backend/saver/`, and the downloader modules to `src/backend/downloader/`.
 
 ### Changed
 - README rewritten in the new register: screensaver picker feature list, install matrix, CLI flags, configuration, build instructions, license.
@@ -29,17 +29,17 @@ All notable changes to this project will be documented in this file.
 - Refactored monolithic `src/ui.rs` into modular sub-files under `src/ui/` (`mod.rs`, `panels.rs`, `utils.rs`), keeping all source files under 500 lines.
 - Extracted Win32 API declarations from `src/main.rs` into `src/win32.rs`.
 - Resolved all compiler and Clippy warnings across the codebase.
-- **Renamed project** from `trance` to `trance-tui`. The GitHub repository, Cargo package name, binary name, and all user-facing labels now use the `-tui` suffix to make the program's role as a terminal user interface explicit (matching `template-tui`).
-  - Repository: `local76/trance` → `local76/trance-tui`
-  - Crate/binary: `trance` → `trance-tui`
-  - Config file: `%APPDATA%\trance\config.yaml` → `%APPDATA%\trance-tui\config.yaml`
-  - Downloader cache: `%APPDATA%\trance\screensavers\` → `%APPDATA%\trance-tui\screensavers\`
-  - Linux package names: `trance` → `trance-tui`
+- **Renamed project** from `trance` to `trance-App`. The GitHub repository, Cargo package name, binary name, and all user-facing labels now use the `-App` suffix to make the program's role as a terminal user interface explicit (matching `template-App`).
+  - Repository: `local76/trance` → `local76/trance-App`
+  - Crate/binary: `trance` → `trance-App`
+  - Config file: `%APPDATA%\trance\config.yaml` → `%APPDATA%\trance-App\config.yaml`
+  - Downloader cache: `%APPDATA%\trance\screensavers\` → `%APPDATA%\trance-App\screensavers\`
+  - Linux package names: `trance` → `trance-App`
 
 ## [2.6.4] - 2026-06-06
 ### Changed
 - Reorganized repository file layout to align with ARCHITECTURE.md.
-- TUI header title updated to "trance - Screensaver Manager".
+- App header title updated to "trance - Screensaver Manager".
 - Disabled borderless console mode.
 - Embedded app icon into Windows installer package.
 

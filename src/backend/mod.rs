@@ -37,11 +37,11 @@ use crate::win32;
 
 
 
-/// Run the screensaver manager interactive TUI.
+/// Run the screensaver manager interactive app.
 pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
     use ratatui::crossterm::tty::IsTty;
     if !std::io::stdin().is_tty() {
-        return Err("Interactive TUI requires a TTY stdin.".into());
+        return Err("Interactive app requires a TTY stdin.".into());
     }
 
     if library::window::should_relaunch_in_conhost() {
