@@ -6,10 +6,6 @@ rust-version = "1.85"
 license = "MIT"
 description = "TUI Windows screensaver manager"
 
-[features]
-default = ["downloader"]
-downloader = ["dep:ureq", "dep:serde", "dep:serde_json"]
-
 [dependencies]
 ratatui = { version = "0.30", default-features = false, features = ["termwiz"] }
 crossterm = "0.28"
@@ -22,9 +18,6 @@ library = { path = "../library", features = ["widgets", "sys-info", "window", "c
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56.0"
-ureq = { version = "2.9", optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true }
-serde_json = { version = "1.0.150", optional = true }
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_System_Console",

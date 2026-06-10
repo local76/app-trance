@@ -33,7 +33,6 @@ pub fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
     let hide_stock_color = if app.local.hide_stock { theme.accent_secondary } else { theme.text_dim };
     
     let timeout_value = format!("{} minutes", app.global.timeout / 60);
-    let cycle_time_value = format!("{} seconds", app.local.random_cycle_secs);
 
     let mut lines = Vec::new();
 
@@ -56,7 +55,6 @@ pub fn render_prefs(app: &mut App, frame: &mut Frame, area: Rect) {
     add_field(GlobalField::Active,       "Active:        ", active_status.to_string(), active_color);
     add_field(GlobalField::Timeout,      "Timeout:       ", timeout_value, theme.accent_primary);
     add_field(GlobalField::PreventSleep, "Prevent sleep: ", sleep_status.to_string(), sleep_color);
-    add_field(GlobalField::CycleTime,    "Cycle time:    ", cycle_time_value, theme.accent_primary);
     add_field(GlobalField::HideStock,    "Hide stock:    ", hide_stock_status.to_string(), hide_stock_color);
 
     let prefs_inner = prefs_block.inner(area);

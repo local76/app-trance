@@ -2,7 +2,7 @@
 //!
 //! **Taxonomy Classification**: Interface (CLI / Diagnostics Layer).
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
@@ -158,31 +158,9 @@ pub fn run_doctor(fix: bool) -> Result<(), Box<dyn std::error::Error>> {
 
     // 5. Local Preferences Check
     println!("\nLocal Preferences Check:");
-    let mut local = LocalConfig::load();
+    let local = LocalConfig::load();
     println!("  - Prevent System Sleep:      {}", if local.prevent_sleep { "ENABLED (Active Awake)" } else { "DISABLED (Normal)" });
-    println!("  - Random Cycle Duration:     {} seconds", local.random_cycle_secs);
-    println!("  - Selected Cycle Screensavers ({}):", local.selected_paths.len());
-    if local.selected_paths.is_empty() {
-        println!("      (None selected; default cycle will cycle all discovered screensavers)");
-    } else {
-        let mut missing_count = 0;
-        for path in &local.selected_paths {
-            let p = Path::new(path);
-            let exists = p.exists();
-            if !exists {
-                missing_count += 1;
-            }
-            let status = if exists { "OK" } else { "MISSING FILE" };
-            let filename = p.file_name().and_then(|f| f.to_str()).unwrap_or(path);
-            println!("      - {} [{}] ({})", filename, status, path);
-        }
-        if missing_count > 0 && fix {
-            local.selected_paths.retain(|path| Path::new(path).exists());
-            if local.save().is_ok() {
-                println!("    [FIXED] Removed {} missing screensaver(s) from cycle selection.", missing_count);
-            }
-        }
-    }
+    println!("  - Hide Stock Screensavers:   {}", if local.hide_stock { "ENABLED" } else { "DISABLED" });
 
     // 6. Theme Detection Check
     print!("\nTheme Detection:         ");

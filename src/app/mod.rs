@@ -6,16 +6,13 @@ use crate::config::{GlobalConfig, LocalConfig};
 use crate::backend::preview::Screensaver;
 use crate::theme::TuiTheme;
 
-#[cfg(feature = "downloader")]
-use crate::backend::downloader;
 use crate::backend::preview;
 
 pub mod actions;
-pub mod cycle;
+pub mod markdown;
 pub mod keys;
 
 pub use crossterm::event::{KeyCode, KeyModifiers};
-pub use cycle::run_random_cycle;
 
 const README_CONTENT: &str = include_str!("../../README.md");
 const SUPPORT_CONTENT: &str = include_str!("../../SUPPORT.md");
@@ -43,8 +40,6 @@ pub enum GlobalField {
     Timeout,
     /// Prevent system sleep state.
     PreventSleep,
-    /// Cycling interval duration.
-    CycleTime,
     /// Hide stock Windows screensavers.
     HideStock,
 }
@@ -55,7 +50,6 @@ impl GlobalField {
         GlobalField::Active,
         GlobalField::Timeout,
         GlobalField::PreventSleep,
-        GlobalField::CycleTime,
         GlobalField::HideStock,
     ];
 }
@@ -69,21 +63,7 @@ pub enum StatusKind {
     Error,
 }
 
-/// Screen saver download pending action.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg(feature = "downloader")]
-pub enum PendingAction {
-    /// Apply active screensaver.
-    Apply,
-    /// Toggle cycling list selection.
-    ToggleSelection,
-    /// Run screensaver fullscreen preview.
-    Preview,
-    /// Open screensaver configuration.
-    Configure,
-    /// Toggle screensaver selection and apply immediately.
-    ToggleAndApply,
-}
+
 
 /// Status message displayed on the TUI status bar.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -118,20 +98,6 @@ pub struct App {
     pub list_offset: usize,
     /// Cached list items for rendering the screensavers list.
     pub list_items: Vec<ratatui::widgets::ListItem<'static>>,
-    /// Visual progress bar interpolation value.
-    pub visual_progress: f64,
-    /// Active download worker state.
-    #[cfg(feature = "downloader")]
-    pub download_state: Option<std::sync::Arc<std::sync::Mutex<downloader::DownloadState>>>,
-    /// Registry feed worker fetch results.
-    #[cfg(feature = "downloader")]
-    pub registry_results: Option<std::sync::Arc<std::sync::Mutex<Option<Vec<downloader::RegistryEntry>>>>>,
-    /// Curated registry catalog items.
-    #[cfg(feature = "downloader")]
-    pub registry_entries: Vec<downloader::RegistryEntry>,
-    /// Action to execute once download succeeds.
-    #[cfg(feature = "downloader")]
-    pub pending_action: Option<PendingAction>,
     /// Help overlay visibility.
     pub show_help: bool,
     /// Selection column/row start bounds.
@@ -175,30 +141,6 @@ impl App {
         local: LocalConfig,
         theme: TuiTheme,
     ) -> Self {
-        let mut local = local;
-        let mut config_changed = false;
-
-        if local.hide_stock {
-            let orig_len = local.selected_paths.len();
-            local.selected_paths.retain(|p| {
-                !preview::is_stock_screensaver(std::path::Path::new(p))
-            });
-            if local.selected_paths.len() != orig_len {
-                config_changed = true;
-            }
-        }
-
-        // Remove any selected paths that do not exist on disk anymore
-        let orig_len = local.selected_paths.len();
-        local.selected_paths.retain(|p| std::path::Path::new(p).exists());
-        if local.selected_paths.len() != orig_len {
-            config_changed = true;
-        }
-
-        if config_changed {
-            let _ = local.save();
-        }
-
         let highlighted = local
             .last_selected
             .as_deref()
@@ -209,52 +151,6 @@ impl App {
             })
             .unwrap_or(0)
             .min(screensavers.len().saturating_sub(1));
-
-        #[cfg(feature = "downloader")]
-        let registry_results = {
-            let state = std::sync::Arc::new(std::sync::Mutex::new(None));
-            let thread_state = state.clone();
-            let feed_urls = local.feed_urls.clone();
-            if !library::apps::tui_bootstrap::is_app_shutting_down() {
-                std::thread::spawn(move || {
-                    if library::apps::tui_bootstrap::is_app_shutting_down() {
-                        return;
-                    }
-                    let mut all_entries = Vec::new();
-                    if let Ok(local_entries) = downloader::load_local_registry() {
-                        for entry in local_entries {
-                            if library::apps::tui_bootstrap::is_app_shutting_down() {
-                                return;
-                            }
-                            if !all_entries.iter().any(|e: &downloader::RegistryEntry| e.name.eq_ignore_ascii_case(&entry.name)) {
-                                all_entries.push(entry);
-                            }
-                        }
-                    }
-                    for url in feed_urls {
-                        if library::apps::tui_bootstrap::is_app_shutting_down() {
-                            return;
-                        }
-                        if let Ok(entries) = downloader::fetch_registry(&url) {
-                            for entry in entries {
-                                if library::apps::tui_bootstrap::is_app_shutting_down() {
-                                    return;
-                                }
-                                if !all_entries.iter().any(|e: &downloader::RegistryEntry| e.name.eq_ignore_ascii_case(&entry.name)) {
-                                    all_entries.push(entry);
-                                }
-                            }
-                        }
-                    }
-                    if !all_entries.is_empty() {
-                        if let Ok(mut lock) = thread_state.lock() {
-                            *lock = Some(all_entries);
-                        }
-                    }
-                });
-            }
-            Some(state)
-        };
 
         let mut app = App {
             screensavers,
@@ -268,15 +164,6 @@ impl App {
             should_quit: false,
             list_offset: 0,
             list_items: Vec::new(),
-            visual_progress: 0.0,
-            #[cfg(feature = "downloader")]
-            download_state: None,
-            #[cfg(feature = "downloader")]
-            registry_results,
-            #[cfg(feature = "downloader")]
-            registry_entries: Vec::new(),
-            #[cfg(feature = "downloader")]
-            pending_action: None,
             selection_start: None,
             selection_end: None,
             selection_pending_copy: false,
@@ -330,13 +217,14 @@ impl App {
     /// Update the cached ListItem widgets in `self.list_items`.
     pub fn update_list_items(&mut self) {
         let theme = self.theme;
+        let active_scr_path = self.global.active_scr.clone();
+        let is_global_active = self.global.active;
         self.list_items = self
             .screensavers
             .iter()
             .map(|s| {
-                let is_checked = self.local.selected_paths.contains(&s.path.to_string_lossy().into_owned());
-                let exists = s.path.exists();
-                let is_online = s.download_url.is_some() && !exists;
+                let s_path_str = s.path.to_string_lossy().into_owned();
+                let is_checked = is_global_active && active_scr_path == s_path_str;
                 let is_stock = preview::is_stock_screensaver(&s.path);
 
                 let active_str = if is_checked { "yes" } else { "no" };
@@ -344,9 +232,7 @@ impl App {
 
                 let name = crate::ui::truncate(&s.name, 28);
                 let name_str = format!("{:<30}  ", name);
-                let name_color = if is_online {
-                    theme.accent_primary
-                } else if is_checked {
+                let name_color = if is_checked {
                     theme.text_main
                 } else {
                     theme.text_dim
@@ -389,7 +275,7 @@ impl App {
 
     /// Load and open an embedded markdown document in the viewer modal.
     pub fn open_embedded_markdown(&mut self, title: &str, content: &str) {
-        self.markdown_lines = cycle::parse_markdown_to_lines(content, &self.theme);
+        self.markdown_lines = markdown::parse_markdown_to_lines(content, &self.theme);
         self.show_markdown = Some(title.to_string());
         self.markdown_scroll = 0;
         self.status = Some(StatusMessage {
@@ -434,35 +320,20 @@ mod tests {
             Screensaver {
                 name: "Bubbles".to_string(),
                 path: PathBuf::from("C:\\Windows\\System32\\bubbles.scr"),
-                #[cfg(feature = "downloader")]
-                download_url: None,
             },
             Screensaver {
                 name: "Mystify".to_string(),
                 path: PathBuf::from("C:\\Windows\\System32\\mystify.scr"),
-                #[cfg(feature = "downloader")]
-                download_url: None,
             },
             Screensaver {
                 name: "Ribbons".to_string(),
                 path: PathBuf::from("C:\\Windows\\System32\\ribbons.scr"),
-                #[cfg(feature = "downloader")]
-                download_url: None,
             },
         ];
         let global = GlobalConfig::default();
         let local = LocalConfig::default();
         let theme = TuiTheme::high_contrast(true);
         App::new(screensavers, global, local, theme)
-    }
-
-    #[test]
-    fn test_is_uninstall() {
-        assert!(cycle::is_uninstall(std::path::Path::new(
-            "C:\\some\\uninstall.exe"
-        )));
-        assert!(cycle::is_uninstall(std::path::Path::new("UNINSTALL_scr.scr")));
-        assert!(!cycle::is_uninstall(std::path::Path::new("bubbles.scr")));
     }
 
     #[test]
@@ -484,9 +355,6 @@ mod tests {
 
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
         assert_eq!(app.global_field, GlobalField::PreventSleep);
-
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::CycleTime);
 
         app.handle_key(KeyCode::Down, KeyModifiers::empty());
         assert_eq!(app.global_field, GlobalField::HideStock);
@@ -519,72 +387,13 @@ mod tests {
         }
 
         let mut app = mock_app();
-        assert!(app.local.selected_paths.is_empty());
 
         app.focused = FocusedSection::SaverList;
 
-        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
-        assert_eq!(app.local.selected_paths.len(), 1);
-        assert_eq!(app.local.selected_paths[0], "C:\\Windows\\System32\\bubbles.scr");
-
-        app.highlighted = 1;
-        app.handle_key(KeyCode::Char(' '), KeyModifiers::empty());
-        assert_eq!(app.local.selected_paths.len(), 2);
-        assert_eq!(app.local.selected_paths[1], "C:\\Windows\\System32\\mystify.scr");
-
-        let exe = std::env::current_exe().unwrap_or_default();
-        assert_eq!(app.global.active_scr, exe.to_string_lossy().into_owned());
+        assert_eq!(app.global.active_scr, "");
 
         app.handle_key(KeyCode::Enter, KeyModifiers::empty());
-        assert_eq!(app.local.selected_paths.len(), 1);
         assert_eq!(app.global.active_scr, "C:\\Windows\\System32\\bubbles.scr");
-
-        let _ = std::fs::remove_dir_all(&temp_dir);
-    }
-
-    #[test]
-    #[cfg(feature = "downloader")]
-    fn test_registry_merge_and_automated_downloader() {
-        let _lock = crate::config::TEST_LOCK.lock().unwrap();
-        let temp_dir = std::env::temp_dir().join(format!(
-            "trance_test_app_downloader_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_micros()
-        ));
-        std::fs::create_dir_all(&temp_dir).unwrap();
-
-        unsafe {
-            std::env::set_var("APPDATA", &temp_dir);
-        }
-
-        let mut app = mock_app();
-        app.focused = FocusedSection::SaverList;
-        assert_eq!(app.screensavers.len(), 3);
-
-        let entries = vec![
-            downloader::RegistryEntry {
-                name: "beams".to_string(),
-                author: "UberMetroid".to_string(),
-                description: "Beams screensaver".to_string(),
-                download_url: Some("https://example.com/beams.scr".to_string()),
-                downloads: None,
-                version: "2.0".to_string(),
-            },
-        ];
-        app.merge_registry_entries(entries.clone());
-
-        assert_eq!(app.screensavers.len(), 4);
-        assert_eq!(app.screensavers[0].name, "beams");
-        assert_eq!(app.screensavers[0].download_url.as_deref(), Some("https://example.com/beams.scr"));
-
-        app.highlighted = 0;
-        assert_eq!(app.highlighted, 0);
-
-        app.toggle_highlighted_selection();
-        assert!(app.download_state.is_some());
-        assert_eq!(app.pending_action, Some(PendingAction::ToggleSelection));
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

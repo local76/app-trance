@@ -126,11 +126,6 @@ impl App {
                 self.preview_highlighted()
             }
             KeyCode::Char('c') | KeyCode::Char('C') => self.configure_highlighted(),
-            KeyCode::Char('d') | KeyCode::Char('D') => {
-                if self.focused == FocusedSection::SaverList {
-                    self.delete_highlighted();
-                }
-            }
             KeyCode::F(1..=7) => {
                 if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
                     self.open_embedded_markdown(name, doc_content(name));
@@ -152,7 +147,6 @@ impl App {
         if self.focused == FocusedSection::GlobalPrefs {
             match self.global_field {
                 GlobalField::Timeout => self.adjust_timeout(-1),
-                GlobalField::CycleTime => self.adjust_cycle_time(-1),
                 _ => {}
             }
         }
@@ -162,7 +156,6 @@ impl App {
         if self.focused == FocusedSection::GlobalPrefs {
             match self.global_field {
                 GlobalField::Timeout => self.adjust_timeout(1),
-                GlobalField::CycleTime => self.adjust_cycle_time(1),
                 _ => {}
             }
         }
@@ -174,9 +167,9 @@ impl App {
                 GlobalField::Active => self.toggle_active(),
                 GlobalField::PreventSleep => self.toggle_prevent_sleep(),
                 GlobalField::HideStock => self.toggle_hide_stock(),
-                GlobalField::Timeout | GlobalField::CycleTime => {}
+                GlobalField::Timeout => {}
             },
-            FocusedSection::SaverList => self.toggle_and_apply_highlighted(),
+            FocusedSection::SaverList => self.apply_highlighted(),
         }
     }
 

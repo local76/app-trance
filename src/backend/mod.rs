@@ -19,15 +19,7 @@ pub mod saver_win32;
 #[path = "saver/stub.rs"]
 pub mod saver_win32;
 
-#[cfg(feature = "downloader")]
-#[cfg(target_os = "windows")]
-#[path = "downloader/mod.rs"]
-pub mod downloader;
 
-#[cfg(feature = "downloader")]
-#[cfg(not(target_os = "windows"))]
-#[path = "downloader/stub.rs"]
-pub mod downloader;
 
 use crate::app::{App, KeyCode, KeyModifiers};
 use crate::config::{GlobalConfig, LocalConfig};
@@ -84,146 +76,9 @@ pub fn run_tui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::E
             last_sleep_prevented = app.local.prevent_sleep;
         }
 
-        #[cfg(feature = "downloader")]
-        {
-            let mut got_entries = None;
-            if let Some(ref registry_mutex) = app.registry_results {
-                if let Ok(mut lock) = registry_mutex.try_lock() {
-                    if let Some(entries) = lock.take() {
-                        got_entries = Some(entries);
-                    }
-                }
-            }
-            if let Some(entries) = got_entries {
-                app.registry_results = None; // Stop polling
-                app.merge_registry_entries(entries);
-            }
-
-            let mut reset_state = false;
-            let mut download_success = false;
-            let mut err_msg = None;
-            let mut downloaded_name = String::new();
-            let mut post_install: Option<String> = None;
-
-            if let Some(ref state_mutex) = app.download_state {
-                if let Ok(state) = state_mutex.lock() {
-                    downloaded_name = state.name.clone();
-                    post_install = state.post_install_command.clone();
-                    match state.status {
-                        crate::backend::downloader::DownloadStatus::Success => {
-                            if app.visual_progress >= 1.0 {
-                                reset_state = true;
-                                download_success = true;
-                            }
-                        }
-                        crate::backend::downloader::DownloadStatus::Error(ref err) => {
-                            reset_state = true;
-                            err_msg = Some(err.clone());
-                        }
-                        crate::backend::downloader::DownloadStatus::Downloading => {}
-                    }
-                }
-            }
-
-            if reset_state {
-                app.download_state = None;
-                if download_success {
-                    let _toast_msg = if post_install.is_some() {
-                        format!("Downloaded package: {} (see status for install cmd)", downloaded_name)
-                    } else {
-                        format!("Successfully downloaded: {}", downloaded_name)
-                    };
-                    win32::show_toast_notification("trance - Download Completed", &_toast_msg);
-                    win32::log_windows_event(
-                        "trance",
-                        4, // EVENTLOG_INFORMATION_TYPE
-                        1001,
-                        &format!("Successfully downloaded: {}", downloaded_name),
-                    );
-
-                    app.refresh_screensavers();
-
-                    // Re-locate the just-downloaded saver by name (case-insensitive match on
-                    // saver name or the basename/stem of its path) so that the pending action
-                    // (apply/preview/...) and the highlight operate on the correct item after
-                    // discover + merge have rebuilt and re-sorted the list. This makes trance
-                    // "know where the new screensavers are located" after a download lands.
-                    if !downloaded_name.is_empty() {
-                        if let Some(pos) = app.screensavers.iter().position(|s| {
-                            s.name.eq_ignore_ascii_case(&downloaded_name) ||
-                            s.path.file_name()
-                                .and_then(|f| f.to_str())
-                                .is_some_and(|f| f.eq_ignore_ascii_case(&downloaded_name) ||
-                                    f.eq_ignore_ascii_case(&format!("{}.scr", downloaded_name)) ||
-                                    f.eq_ignore_ascii_case(&format!("{}.exe", downloaded_name)))
-                            ||
-                            s.path.file_stem()
-                                .and_then(|f| f.to_str())
-                                .is_some_and(|f| f.eq_ignore_ascii_case(&downloaded_name))
-                        }) {
-                            app.highlighted = pos;
-                        }
-                    }
-
-                    // Ensure highlighted is valid after the list was rebuilt by refresh (in case
-                    // the downloaded item wasn't found by name match or list size changed).
-                    app.resolve_highlight();
-
-                    // Clear any "Refreshed" message that refresh_screensavers set; the
-                    // apply below (or toast) will provide the right feedback.
-                    if matches!(app.status.as_ref().map(|m| m.text.as_str()), Some(t) if t.starts_with("Refreshed")) {
-                        app.status = None;
-                    }
-
-                    if let Some(action) = app.pending_action.take() {
-                        match action {
-                            crate::app::PendingAction::Apply => app.apply_highlighted(),
-                            crate::app::PendingAction::ToggleSelection => app.toggle_highlighted_selection(),
-                            crate::app::PendingAction::Preview => app.preview_highlighted(),
-                            crate::app::PendingAction::Configure => app.configure_highlighted(),
-                            crate::app::PendingAction::ToggleAndApply => {
-                                app.toggle_highlighted_selection();
-                                app.apply_highlighted();
-                            }
-                        }
-                    }
-                } else if let Some(msg) = err_msg {
-                    win32::show_toast_notification(
-                        "trance - Download Failed",
-                        &format!("Failed to download {}: {}", downloaded_name, msg),
-                    );
-                    win32::log_windows_event(
-                        "trance",
-                        1, // EVENTLOG_ERROR_TYPE
-                        1002,
-                        &format!("Failed to download {}: {}", downloaded_name, msg),
-                    );
-                    app.pending_action = None;
-                    app.status = Some(crate::app::StatusMessage {
-                        text: format!("Download failed: {}", msg),
-                        kind: crate::app::StatusKind::Error,
-                    });
-                }
-            }
-        }
-
-        #[cfg(feature = "downloader")]
-        {
-            app.update_download_progress();
-        }
-
         terminal.draw(|f| ui::render(&mut app, f))?;
 
-        let is_animating = {
-            #[cfg(feature = "downloader")]
-            {
-                app.download_state.is_some()
-            }
-            #[cfg(not(feature = "downloader"))]
-            {
-                false
-            }
-        };
+        let is_animating = false;
 
         let poll = if is_animating {
             Duration::from_millis(30)

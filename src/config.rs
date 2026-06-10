@@ -75,11 +75,7 @@ impl GlobalConfig {
 pub struct LocalConfig {
     pub last_selected: Option<String>,
     pub prevent_sleep: bool,
-    /// Hidden/advanced setting for power users to customize the random cycle interval (in seconds).
-    pub random_cycle_secs: u32,
-    pub selected_paths: Vec<String>,
     pub hide_stock: bool,
-    pub feed_urls: Vec<String>,
 }
 
 impl Default for LocalConfig {
@@ -87,12 +83,7 @@ impl Default for LocalConfig {
         LocalConfig {
             last_selected: None,
             prevent_sleep: false,
-            random_cycle_secs: 30,
-            selected_paths: Vec::new(),
             hide_stock: false,
-            feed_urls: vec![
-                "https://raw.githubusercontent.com/local76/trance/main/registry.json".to_string()
-            ],
         }
     }
 }
@@ -126,24 +117,8 @@ impl LocalConfig {
                 out.last_selected = Some(v.to_string());
             } else if let Some(v) = line.strip_prefix("prevent_sleep: ") {
                 out.prevent_sleep = v.trim() == "true";
-            } else if let Some(v) = line.strip_prefix("random_cycle_secs: ") {
-                if let Ok(secs) = v.trim().parse::<u32>() {
-                    out.random_cycle_secs = secs;
-                }
-            } else if let Some(v) = line.strip_prefix("selected_paths: ") {
-                out.selected_paths = v
-                    .split(';')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect();
             } else if let Some(v) = line.strip_prefix("hide_stock: ") {
                 out.hide_stock = v.trim() == "true";
-            } else if let Some(v) = line.strip_prefix("feed_urls: ") {
-                out.feed_urls = v
-                    .split(';')
-                    .map(|s| s.trim().to_string())
-                    .filter(|s| !s.is_empty())
-                    .collect();
             }
         }
         out
@@ -157,13 +132,10 @@ impl LocalConfig {
             std::fs::create_dir_all(parent)?;
         }
         let content = format!(
-            "last_selected: {}\nprevent_sleep: {}\nrandom_cycle_secs: {}\nselected_paths: {}\nhide_stock: {}\nfeed_urls: {}\n",
+            "last_selected: {}\nprevent_sleep: {}\nhide_stock: {}\n",
             self.last_selected.as_deref().unwrap_or(""),
             self.prevent_sleep,
-            self.random_cycle_secs,
-            self.selected_paths.join(";"),
             self.hide_stock,
-            self.feed_urls.join(";"),
         );
         library::write_file_atomic(path, content)
     }
@@ -199,16 +171,7 @@ mod tests {
         let config = LocalConfig {
             last_selected: Some("mystify.scr".to_string()),
             prevent_sleep: true,
-            random_cycle_secs: 45,
-            selected_paths: vec![
-                "C:\\Windows\\System32\\mystify.scr".to_string(),
-                "C:\\Windows\\System32\\bubbles.scr".to_string(),
-            ],
             hide_stock: true,
-            feed_urls: vec![
-                "https://example.com/feed1.json".to_string(),
-                "https://example.com/feed2.json".to_string(),
-            ],
         };
 
         // Save
@@ -218,22 +181,7 @@ mod tests {
         let loaded = LocalConfig::load();
         assert_eq!(loaded.last_selected.as_deref(), Some("mystify.scr"));
         assert!(loaded.prevent_sleep);
-        assert_eq!(loaded.random_cycle_secs, 45);
-        assert_eq!(
-            loaded.selected_paths,
-            vec![
-                "C:\\Windows\\System32\\mystify.scr".to_string(),
-                "C:\\Windows\\System32\\bubbles.scr".to_string(),
-            ]
-        );
         assert!(loaded.hide_stock);
-        assert_eq!(
-            loaded.feed_urls,
-            vec![
-                "https://example.com/feed1.json".to_string(),
-                "https://example.com/feed2.json".to_string(),
-            ]
-        );
 
         // Clean up temp dir
         let _ = std::fs::remove_dir_all(&temp_dir);

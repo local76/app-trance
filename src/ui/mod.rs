@@ -136,95 +136,6 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             Style::default().fg(theme.accent_primary).add_modifier(Modifier::BOLD),
         ));
 
-    #[cfg(feature = "downloader")]
-    let mut is_downloading = false;
-    #[cfg(feature = "downloader")]
-    let mut download_name = String::new();
-    #[cfg(feature = "downloader")]
-    {
-        if let Some(ref state_mutex) = app.download_state {
-            is_downloading = true;
-            if let Ok(state) = state_mutex.lock() {
-                download_name = state.name.clone();
-            }
-        }
-    }
-
-    #[cfg(feature = "downloader")]
-    let current_online_hint = if let Some(s) = app.screensavers.get(app.highlighted) {
-        if s.download_url.is_some() && !s.path.exists() {
-            "  |  Press Space/Enter to download this curated screensaver"
-        } else {
-            ""
-        }
-    } else {
-        ""
-    };
-    #[cfg(not(feature = "downloader"))]
-    let current_online_hint = "";
-
-    #[cfg(feature = "downloader")]
-    let footer_p = if is_downloading {
-        let progress = app.visual_progress;
-        let track_width = 30;
-        let pacman_pos = ((progress * track_width as f64).round() as usize).min(track_width);
-        
-        let mut track = String::new();
-        let is_mouth_open = (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_millis() / 150)
-            .unwrap_or(0) % 2) == 0;
-            
-        let pacman_char = if progress >= 1.0 {
-            "o"
-        } else if is_mouth_open {
-            "ᗧ"
-        } else {
-            "o"
-        };
-
-        if progress < 1.0 {
-            for _ in 0..pacman_pos {
-                track.push(' ');
-            }
-            track.push_str(pacman_char);
-            for i in (pacman_pos + 1)..track_width {
-                if i == track_width - 1 {
-                    track.push('ᗣ');
-                } else {
-                    track.push('·');
-                }
-            }
-        } else {
-            for _ in 0..track_width.saturating_sub(1) {
-                track.push(' ');
-            }
-            track.push('o');
-        }
-
-        Paragraph::new(Line::from(vec![
-            Span::styled(format!("Downloading ({}): ", download_name), Style::default().fg(theme.text_main).add_modifier(Modifier::BOLD)),
-            Span::styled(" [", Style::default().fg(theme.border)),
-            Span::styled(track, Style::default().fg(theme.accent_primary)),
-            Span::styled("]", Style::default().fg(theme.border)),
-            Span::styled(format!(" {:>3.0}%", progress * 100.0), Style::default().fg(theme.accent_secondary)),
-        ]))
-    } else if let Some(ref status) = app.status {
-        let (color, icon) = match status.kind {
-            crate::app::StatusKind::Info => (theme.accent_primary, app.glyphs.info),
-            crate::app::StatusKind::Error => (theme.missing, app.glyphs.status_err),
-        };
-        Paragraph::new(Line::from(vec![
-            Span::styled(format!("{} ", icon), Style::default().fg(color)),
-            Span::styled(&status.text, Style::default().fg(color).add_modifier(Modifier::BOLD)),
-        ]))
-    } else {
-        Paragraph::new(Line::from(vec![
-            Span::styled(format!("Ready. Press Tab to cycle focus.{}", current_online_hint), Style::default().fg(theme.text_dim)),
-        ]))
-    };
-
-    #[cfg(not(feature = "downloader"))]
     let footer_p = if let Some(ref status) = app.status {
         let (color, icon) = match status.kind {
             crate::app::StatusKind::Info => (theme.accent_primary, app.glyphs.info),
@@ -236,7 +147,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
         ]))
     } else {
         Paragraph::new(Line::from(vec![
-            Span::styled(format!("Ready. Press Tab to cycle focus.{}", current_online_hint), Style::default().fg(theme.text_dim)),
+            Span::styled("Ready. Press Tab to cycle focus.", Style::default().fg(theme.text_dim)),
         ]))
     };
 
