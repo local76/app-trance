@@ -54,7 +54,8 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
     // Clean up registry if the active screensaver points to a missing file
     if !global.active_scr.is_empty() {
         let path = std::path::Path::new(&global.active_scr);
-        if !path.exists() {
+        let exists = path.exists() || screensavers.iter().any(|s| s.path.file_name() == path.file_name());
+        if !exists {
             tracing::warn!(path = ?global.active_scr, "Active screensaver in registry is missing, resetting registry.");
             let first_valid = screensavers.iter().find(|s| s.path.exists());
             if let Some(s) = first_valid {
