@@ -75,84 +75,36 @@ impl App {
                         kind: StatusKind::Info,
                     });
                 }
-                KeyCode::F(1) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("README.md", super::README_CONTENT);
+                _ => {
+                    // F1..F7 -> open a different doc, closing the help overlay
+                    if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+                        self.show_help = false;
+                        self.open_embedded_markdown(name, doc_content(name));
+                    }
                 }
-                KeyCode::F(2) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("SUPPORT.md", super::SUPPORT_CONTENT);
-                }
-                KeyCode::F(3) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("LICENSE.md", super::LICENSE_CONTENT);
-                }
-                KeyCode::F(4) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("COPYRIGHT.md", super::COPYRIGHT_CONTENT);
-                }
-                KeyCode::F(5) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("PRIVACY.md", super::PRIVACY_CONTENT);
-                }
-                KeyCode::F(6) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("SECURITY.md", super::SECURITY_CONTENT);
-                }
-                KeyCode::F(7) => {
-                    self.show_help = false;
-                    self.open_embedded_markdown("CONTRIBUTING.md", super::CONTRIBUTING_CONTENT);
-                }
-                _ => {}
             }
             return false;
         }
 
         if self.show_markdown.is_some() {
-            match code {
-                KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => {
-                    self.show_markdown = None;
-                }
-                KeyCode::F(1) => {
-                    self.open_embedded_markdown("README.md", super::README_CONTENT);
-                }
-                KeyCode::F(2) => {
-                    self.open_embedded_markdown("SUPPORT.md", super::SUPPORT_CONTENT);
-                }
-                KeyCode::F(3) => {
-                    self.open_embedded_markdown("LICENSE.md", super::LICENSE_CONTENT);
-                }
-                KeyCode::F(4) => {
-                    self.open_embedded_markdown("COPYRIGHT.md", super::COPYRIGHT_CONTENT);
-                }
-                KeyCode::F(5) => {
-                    self.open_embedded_markdown("PRIVACY.md", super::PRIVACY_CONTENT);
-                }
-                KeyCode::F(6) => {
-                    self.open_embedded_markdown("SECURITY.md", super::SECURITY_CONTENT);
-                }
-                KeyCode::F(7) => {
-                    self.open_embedded_markdown("CONTRIBUTING.md", super::CONTRIBUTING_CONTENT);
-                }
-                KeyCode::Up => {
-                    self.markdown_scroll = self.markdown_scroll.saturating_sub(1);
-                }
-                KeyCode::Down => {
-                    if self.markdown_scroll + 10 < self.markdown_lines.len() {
-                        self.markdown_scroll += 1;
-                    }
-                }
-                KeyCode::PageUp => {
-                    self.markdown_scroll = self.markdown_scroll.saturating_sub(15);
-                }
-                KeyCode::PageDown => {
-                    if self.markdown_scroll + 15 < self.markdown_lines.len() {
-                        self.markdown_scroll += 15;
-                    } else {
-                        self.markdown_scroll = self.markdown_lines.len().saturating_sub(10);
-                    }
-                }
-                _ => {}
+            // F1..F7 -> swap to a different doc
+            if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+                self.open_embedded_markdown(name, doc_content(name));
+                return false;
+            }
+            // Up/Down/PageUp/PageDown -> scroll the markdown
+            if let Some(new_scroll) = library::apps::chrome::scroll_for_key(
+                code,
+                self.markdown_scroll,
+                self.markdown_lines.len(),
+                10,
+            ) {
+                self.markdown_scroll = new_scroll;
+                return false;
+            }
+            // Esc/q close the viewer
+            if matches!(code, KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc) {
+                self.show_markdown = None;
             }
             return false;
         }
@@ -179,26 +131,10 @@ impl App {
                     self.delete_highlighted();
                 }
             }
-            KeyCode::F(1) => {
-                self.open_embedded_markdown("README.md", super::README_CONTENT);
-            }
-            KeyCode::F(2) => {
-                self.open_embedded_markdown("SUPPORT.md", super::SUPPORT_CONTENT);
-            }
-            KeyCode::F(3) => {
-                self.open_embedded_markdown("LICENSE.md", super::LICENSE_CONTENT);
-            }
-            KeyCode::F(4) => {
-                self.open_embedded_markdown("COPYRIGHT.md", super::COPYRIGHT_CONTENT);
-            }
-            KeyCode::F(5) => {
-                self.open_embedded_markdown("PRIVACY.md", super::PRIVACY_CONTENT);
-            }
-            KeyCode::F(6) => {
-                self.open_embedded_markdown("SECURITY.md", super::SECURITY_CONTENT);
-            }
-            KeyCode::F(7) => {
-                self.open_embedded_markdown("CONTRIBUTING.md", super::CONTRIBUTING_CONTENT);
+            KeyCode::F(1..=7) => {
+                if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+                    self.open_embedded_markdown(name, doc_content(name));
+                }
             }
             KeyCode::Char('h') | KeyCode::Char('H') => {
                 self.show_help = true;
@@ -261,5 +197,21 @@ impl App {
         } else {
             false
         }
+    }
+}
+
+/// Resolve a doc filename (e.g. "README.md") to its embedded markdown content.
+/// Each app embeds its own copy of the 7 docs at compile time, so this lookup
+/// lives in the app crate (not in library).
+fn doc_content(name: &str) -> &'static str {
+    match name {
+        "README.md" => super::README_CONTENT,
+        "SUPPORT.md" => super::SUPPORT_CONTENT,
+        "LICENSE.md" => super::LICENSE_CONTENT,
+        "COPYRIGHT.md" => super::COPYRIGHT_CONTENT,
+        "PRIVACY.md" => super::PRIVACY_CONTENT,
+        "SECURITY.md" => super::SECURITY_CONTENT,
+        "CONTRIBUTING.md" => super::CONTRIBUTING_CONTENT,
+        _ => "",
     }
 }
