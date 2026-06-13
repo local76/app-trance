@@ -24,7 +24,7 @@ pub fn format_help_row(
     max_desc_width: usize,
     theme: &TuiTheme,
 ) -> Vec<Line<'static>> {
-    let theme_colors = library::ui::theme::ThemeColors {
+    let theme_colors = crate::ui::theme::ThemeColors {
         border: Color::Reset,
         border_active: Color::Reset,
         text_main: theme.text_main,
@@ -38,7 +38,7 @@ pub fn format_help_row(
         selection_bg: Color::Reset,
         selection_fg: Color::Reset,
     };
-    library::ui::layout::format_help_row(
+    crate::ui::layout_helpers::format_help_row(
         key,
         description,
         max_desc_width,

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Trance
+Comment=TUI Screensaver Manager
+Exec=trance
+Icon=trance
+Terminal=true
+Categories=System;Utility;

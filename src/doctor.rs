@@ -5,9 +5,9 @@
 use std::path::PathBuf;
 
 #[cfg(target_os = "windows")]
-use winreg::RegKey;
+use crate::backend::registry::RegKey;
 #[cfg(target_os = "windows")]
-use winreg::enums::HKEY_CURRENT_USER;
+use crate::backend::registry::HKEY_CURRENT_USER;
 
 use crate::config::{GlobalConfig, LocalConfig};
 use crate::backend::preview;

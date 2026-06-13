@@ -77,7 +77,7 @@ impl App {
                 }
                 _ => {
                     // F1..F7 -> open a different doc, closing the help overlay
-                    if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+                    if let Some(name) = crate::chrome::open_embedded_markdown(code) {
                         self.show_help = false;
                         self.open_embedded_markdown(name, doc_content(name));
                     }
@@ -88,12 +88,12 @@ impl App {
 
         if self.show_markdown.is_some() {
             // F1..F7 -> swap to a different doc
-            if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+            if let Some(name) = crate::chrome::open_embedded_markdown(code) {
                 self.open_embedded_markdown(name, doc_content(name));
                 return false;
             }
             // Up/Down/PageUp/PageDown -> scroll the markdown
-            if let Some(new_scroll) = library::apps::chrome::scroll_for_key(
+            if let Some(new_scroll) = crate::chrome::scroll_for_key(
                 code,
                 self.markdown_scroll,
                 self.markdown_lines.len(),
@@ -127,7 +127,7 @@ impl App {
             }
             KeyCode::Char('c') | KeyCode::Char('C') => self.configure_highlighted(),
             KeyCode::F(1..=7) => {
-                if let Some(name) = library::apps::chrome::open_embedded_markdown(code) {
+                if let Some(name) = crate::chrome::open_embedded_markdown(code) {
                     self.open_embedded_markdown(name, doc_content(name));
                 }
             }

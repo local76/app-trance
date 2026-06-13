@@ -1,17 +1,18 @@
-﻿//! Win32 platform integration re-exports.
+//! Win32 platform integration re-exports.
 //!
 //! **Taxonomy Classification**: Platform (OS / Hardware Layer).
 
 #![allow(unused_imports)]
 
-pub use library::toolkit::clipboard::copy_text_to_clipboard;
-pub use library::apps::event_log::log_system_event as log_windows_event;
-pub use library::apps::notification::show_toast_notification;
-pub use library::toolkit::sys_info::{query_os_version, GlyphMap};
-pub use library::apps::window::{
-    center_console_window, query_cursor_pos, get_window_rect, set_window_pos,
-    BorderlessConsole, SingleInstanceGuard,
+pub use crate::clipboard::copy_text_to_clipboard;
+pub use crate::backend::event_log::log_system_event as log_windows_event;
+pub use crate::backend::notification::show_toast_notification;
+pub use crate::backend::sys_info::{query_os_version, GlyphMap};
+pub use crate::backend::window::{
+    query_cursor_pos, get_window_rect, set_window_pos,
 };
+pub use crate::bootstrap_guards::{BorderlessConsole, SingleInstanceGuard};
+pub use crate::win32_relaunch::{relaunch_in_conhost, should_relaunch_in_conhost};
 pub use crate::backend::saver_win32::query_power_status;
 pub use crate::backend::saver_win32::PowerStatus;
 pub use crate::backend::saver_win32::RECT;

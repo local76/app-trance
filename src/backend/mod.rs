@@ -1,15 +1,25 @@
-﻿//! Main event loop and UI runner for trance.
+//! Main event loop and UI runner for trance.
 //!
 //! **Taxonomy Classification**: Interface (UI / Presentation Layer).
 
 
 use std::time::Duration;
-use tracing::info;
 
-use library::apps::bootstrap::{init, shutdown, Config as BootstrapConfig};
+
+use crate::bootstrap::{init, shutdown, Config as BootstrapConfig};
 use crossterm::event::{self, Event, KeyEventKind};
 
+pub mod cleanup;
+pub mod config;
+pub mod event_log;
+pub mod identity;
+pub mod monitors;
+pub mod notification;
 pub mod preview;
+pub mod registry;
+pub mod shell_terminal;
+pub mod sys_info;
+pub mod window;
 
 #[cfg(target_os = "windows")]
 #[path = "saver/win32.rs"]
@@ -36,8 +46,8 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
         return Err("Interactive app requires a TTY stdin.".into());
     }
 
-    if library::apps::window::should_relaunch_in_conhost() {
-        let _ = library::apps::window::relaunch_in_conhost();
+    if crate::win32_relaunch::should_relaunch_in_conhost() {
+        let _ = crate::win32_relaunch::relaunch_in_conhost();
         std::process::exit(0);
     }
 
@@ -51,35 +61,10 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
     let mut global = GlobalConfig::load();
     let mut local = LocalConfig::load();
 
-    // Clean up registry if the active screensaver points to a missing file
-    if !global.active_scr.is_empty() {
-        let path = std::path::Path::new(&global.active_scr);
-        let exists = path.exists() || screensavers.iter().any(|s| s.path.file_name() == path.file_name());
-        if !exists {
-            tracing::warn!(path = ?global.active_scr, "Active screensaver in registry is missing, resetting registry.");
-            let first_valid = screensavers.iter().find(|s| s.path.exists());
-            if let Some(s) = first_valid {
-                global.active_scr = s.path.to_string_lossy().into_owned();
-                global.active = true;
-            } else {
-                global.active_scr = String::new();
-                global.active = false;
-            }
-            let _ = global.save();
-        }
-    }
-
-    // Clean up local preferences if the last selected screensaver doesn't exist
-    if let Some(ref name) = local.last_selected {
-        let exists = screensavers.iter().any(|s| s.path.file_name().and_then(|f| f.to_str()) == Some(name));
-        if !exists {
-            local.last_selected = None;
-            let _ = local.save();
-        }
-    }
+    cleanup::sanitize_config(&mut global, &mut local, &screensavers);
 
     let theme = TuiTheme::detect(theme_override);
-    log_environment(&theme);
+    cleanup::log_environment(&theme);
 
     let mut app = App::new(screensavers, global, local, theme);
 
@@ -88,7 +73,7 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
     let mut sync_check_timer: u32 = 0;
 
     loop {
-        if library::apps::bootstrap::is_app_shutting_down() {
+        if crate::bootstrap::is_app_shutting_down() {
             break;
         }
         if app.should_quit {
@@ -126,20 +111,20 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
 
         if has_event {
             let ev = event::read()?;
-            tracing::info!(?ev, "Received event");
+            info!("Received event: {:?}", ev);
             match ev {
                 Event::Key(key) => {
                     if key.kind == KeyEventKind::Press {
                         let code: KeyCode = key.code;
                         let mods: KeyModifiers = key.modifiers;
-                        tracing::info!(?code, ?mods, "Key press event");
+                        info!("Key press event: code={:?}, mods={:?}", code, mods);
                         if app.handle_key(code, mods) {
-                            tracing::info!("app.handle_key returned true, breaking loop");
+                            info!("app.handle_key returned true, breaking loop");
                             break;
                         }
                         status_ttl = 7500;
                     } else {
-                        tracing::info!(?key.kind, ?key.code, "Ignored non-press key event");
+                        info!("Ignored non-press key event: kind={:?}, code={:?}", key.kind, key.code);
                     }
                 }
                 Event::Mouse(mouse) => match mouse.kind {
@@ -219,10 +204,10 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
                     _ => {}
                 },
                 Event::Resize(w, h) => {
-                    tracing::info!(w, h, "Terminal resize event");
+                    info!("Terminal resize event: w={}, h={}", w, h);
                 }
                 _ => {
-                    tracing::info!("Other event ignored");
+                    info!("Other event ignored");
                 }
             }
         }
@@ -252,18 +237,5 @@ pub fn run_ui(theme_override: Option<&str>) -> Result<(), Box<dyn std::error::Er
     Ok(())
 }
 
-fn log_environment(theme: &TuiTheme) {
-    let metrics = win32::SystemMetrics::query();
-    info!(
-        screen = format!("{}x{}", metrics.screen_w, metrics.screen_h),
-        dpi = metrics.dpi,
-        window_dpi = metrics.window_dpi,
-        dark_mode = metrics.dark_mode,
-        high_contrast = metrics.high_contrast,
-        no_color = theme.no_color,
-        accent = ?metrics.accent,
-        ac_online = metrics.power.ac_online,
-        battery = metrics.power.battery_percent,
-        "environment"
-    );
-}
+
+pub mod sysinfo_shim;

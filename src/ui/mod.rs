@@ -3,16 +3,26 @@
 //! **Taxonomy Classification**: Interface (Main Rendering Layout).
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::layout::{Constraint, Direction, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
-use library::ui::layout::centered_rect;
+use ratatui::widgets::{Block, Borders, Paragraph};
 
 use crate::app::App;
 
-pub mod widgets;
+pub mod colors;
+pub mod layout_guard;
+pub mod layout_helpers;
+pub mod markdown;
+pub mod scrollbar;
+pub mod text;
 pub mod text_format;
+pub mod textbox;
+pub mod theme;
+pub mod title_banner;
+pub mod widgets;
+pub mod overlays;
+pub mod help_modal;
 
 pub use text_format::truncate;
 
@@ -24,7 +34,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     let min_h = 35;
 
     if area.width < min_w || area.height < min_h {
-        render_too_small(theme, frame, area);
+        overlays::render_too_small(theme, frame, area);
         return;
     }
 
@@ -156,266 +166,13 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     frame.render_widget(footer_p, footer_inner);
 
     // Handle Mouse Selection Highlights & Clipboard Copy
-    if let (Some(start), Some(end)) = (app.selection_start, app.selection_end) {
-        let buf = frame.buffer_mut();
-        let width = buf.area.width;
-        let height = buf.area.height;
-
-        let (col1, row1) = start;
-        let (col2, row2) = end;
-
-        let is_selected = |x: u16, y: u16| -> bool {
-            let (c1, r1) = (col1, row1);
-            let (c2, r2) = (col2, row2);
-            if r1 == r2 {
-                y == r1 && x >= c1.min(c2) && x <= c1.max(c2)
-            } else if r1 < r2 {
-                (y == r1 && x >= c1) || (y > r1 && y < r2) || (y == r2 && x <= c2)
-            } else {
-                (y == r2 && x >= c2) || (y > r2 && y < r1) || (y == r1 && x <= c1)
-            }
-        };
-
-        // 1. Draw Highlight
-        for y in 0..height {
-            for x in 0..width {
-                if is_selected(x, y) {
-                    let cell = &mut buf[(x, y)];
-                    cell.set_bg(Color::Rgb(0, 120, 215));
-                    cell.set_fg(Color::White);
-                }
-            }
-        }
-
-        // 2. Perform Copy on Release
-        if app.selection_pending_copy {
-            let mut selected_text = String::new();
-            let mut current_row: Option<u16> = None;
-            let mut current_line = String::new();
-
-            for y in 0..height {
-                for x in 0..width {
-                    if is_selected(x, y) {
-                        let cell = &buf[(x, y)];
-                        if current_row != Some(y) {
-                            if current_row.is_some() {
-                                selected_text.push_str(current_line.trim_end());
-                                selected_text.push('\n');
-                                current_line.clear();
-                            }
-                            current_row = Some(y);
-                        }
-                        current_line.push_str(cell.symbol());
-                    }
-                }
-            }
-            if !current_line.is_empty() {
-                selected_text.push_str(current_line.trim_end());
-            }
-
-            if !selected_text.is_empty() {
-                let _ = crate::win32::copy_text_to_clipboard(&selected_text);
-                let truncated = if selected_text.len() > 30 {
-                    format!("{}...", &selected_text[..27].replace('\n', " "))
-                } else {
-                    selected_text.replace('\n', " ")
-                };
-                app.status = Some(crate::app::StatusMessage {
-                    text: format!("{} Copied selection to clipboard: {}", app.glyphs.clipboard, truncated),
-                    kind: crate::app::StatusKind::Info,
-                });
-            }
-
-            app.selection_start = None;
-            app.selection_end = None;
-            app.selection_pending_copy = false;
-        }
-    }
+    overlays::handle_selection_highlights(app, frame);
 
     // 5. Scrollable Markdown Document Viewer Modal
-    if let Some(ref filename) = app.show_markdown {
-        let area = centered_rect(85, 80, frame.area());
-        let popup_block = Block::default()
-            .title(format!(
-                " Document Viewer: {} (Press Esc/q to Close) ",
-                filename
-            ))
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme.accent_primary));
-
-        let paragraph = Paragraph::new(app.markdown_lines.clone())
-            .block(popup_block)
-            .wrap(ratatui::widgets::Wrap { trim: true })
-            .alignment(ratatui::layout::Alignment::Left)
-            .scroll((app.markdown_scroll as u16, 0));
-
-        frame.render_widget(Clear, area);
-        frame.render_widget(paragraph, area);
-    }
+    overlays::render_markdown_modal(app, frame);
 
     // 6. Help Shortcuts Overlay Modal
-    if app.show_help {
-        let area = centered_rect(65, 75, frame.area());
-        let popup_block = Block::default()
-            .title(" Keyboard Shortcuts & App Commands ")
-            .title_style(
-                Style::default()
-                    .fg(theme.accent_primary)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(theme.accent_primary));
-
-        let key_col_width = 18;
-        let border_padding = 2;
-        let total_inner_width = area.width.saturating_sub(border_padding);
-        let max_desc_width = (total_inner_width as usize)
-            .saturating_sub(key_col_width)
-            .saturating_sub(2); // for ": "
-
-        let mut help_text = Vec::new();
-        help_text.push(Line::from(""));
-
-        help_text.extend(text_format::format_help_row(
-            "Tab / Shift-Tab",
-            "Cycle active panel focus",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "Up / Down",
-            "Navigate lists and preference fields",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "Left / Right",
-            "Adjust settings and toggle flags",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "Space / Enter",
-            "Toggle screensaver selection / Apply settings",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "p / t",
-            "Preview highlighted screensaver",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "c / C",
-            "Configure highlighted screensaver",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "d / D",
-            "Delete downloaded screensaver from list",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "r / R",
-            "Refresh screensavers list",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "Esc / q",
-            "Close dialogs / Help Overlay, or Quit application",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "h / H",
-            "Toggle this help shortcut overlay modal",
-            max_desc_width,
-            &theme,
-        ));
-
-        help_text.push(Line::from(""));
-        help_text.extend(text_format::format_help_row(
-            "F1",
-            "View README.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F2",
-            "View SUPPORT.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F3",
-            "View LICENSE.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F4",
-            "View COPYRIGHT.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F5",
-            "View PRIVACY.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F6",
-            "View SECURITY.md document",
-            max_desc_width,
-            &theme,
-        ));
-        help_text.extend(text_format::format_help_row(
-            "F7",
-            "View CONTRIBUTING.md document",
-            max_desc_width,
-            &theme,
-        ));
-
-        help_text.push(Line::from(""));
-        help_text.extend(text_format::format_help_row(
-            "CLI Subcommands",
-            "trance.exe [tui | doctor]",
-            max_desc_width,
-            &theme,
-        ));
-
-        frame.render_widget(Clear, area);
-        let paragraph = Paragraph::new(help_text).block(popup_block);
-        frame.render_widget(paragraph, area);
-    }
-}
-
-fn render_too_small(theme: crate::theme::TuiTheme, frame: &mut Frame, area: Rect) {
-    let block = Block::default().borders(Borders::ALL);
-    let min_w = 100;
-    let min_h = 35;
-    let text = vec![
-        Line::from(Span::styled(
-            "Terminal too small",
-            Style::default()
-                .fg(theme.accent_secondary)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(format!(
-            "Need at least {min_w}x{min_h}, current {}x{}.",
-            area.width, area.height
-        )),
-    ];
-    frame.render_widget(Clear, area);
-    frame.render_widget(
-        Paragraph::new(text).block(block).wrap(Wrap { trim: false }),
-        area,
-    );
+    help_modal::render_help_modal(app, frame);
 }
 
 

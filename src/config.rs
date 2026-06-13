@@ -1,4 +1,4 @@
-﻿//! Two pieces of persisted state:
+//! Two pieces of persisted state:
 //!  - `GlobalConfig` lives in the Windows registry under
 //!    `HKCU\Control Panel\Desktop` (the keys Windows itself uses).
 //!    (On Linux this is a no-op / stub for now.)
@@ -39,9 +39,9 @@ impl Default for GlobalConfig {
 
 impl GlobalConfig {
     pub fn load() -> Self {
-        let active_scr = library::toolkit::registry::read_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR).unwrap_or_default();
-        let active = library::toolkit::registry::read_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE).as_deref() == Some("1");
-        let timeout = library::toolkit::registry::read_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT)
+        let active_scr = crate::backend::registry::read_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR).unwrap_or_default();
+        let active = crate::backend::registry::read_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE).as_deref() == Some("1");
+        let timeout = crate::backend::registry::read_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT)
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(DEFAULT_TIMEOUT_SECS);
         GlobalConfig {
@@ -53,9 +53,9 @@ impl GlobalConfig {
 
     pub fn save(&self) -> std::io::Result<()> {
         let res = (|| {
-            library::toolkit::registry::write_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR, &self.active_scr)?;
-            library::toolkit::registry::write_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE, if self.active { "1" } else { "0" })?;
-            library::toolkit::registry::write_string(library::toolkit::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT, &self.timeout.to_string())?;
+            crate::backend::registry::write_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_SCR, &self.active_scr)?;
+            crate::backend::registry::write_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_ACTIVE, if self.active { "1" } else { "0" })?;
+            crate::backend::registry::write_string(crate::backend::registry::HKEY_CURRENT_USER, REG_DESKTOP, REG_TIMEOUT, &self.timeout.to_string())?;
 
             // Propagate settings changes to the OS immediately
             if !cfg!(test) {
@@ -65,7 +65,7 @@ impl GlobalConfig {
             Ok(())
         })();
         if let Err(ref e) = res {
-            tracing::error!(error = %e, "Failed to save global configuration to registry");
+            error!("Failed to save global configuration to registry: {}", e);
         }
         res
     }
@@ -137,7 +137,7 @@ impl LocalConfig {
             self.prevent_sleep,
             self.hide_stock,
         );
-        library::core::write_file_atomic(path, content)
+        crate::backend::config::write_file_atomic(path, content)
     }
 }
 
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_local_config_roundtrip() {
-        let _lock = TEST_LOCK.lock().unwrap();
+        let _lock = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // Create a unique temp dir for the test to avoid collisions
         let temp_dir = std::env::temp_dir().join(format!(
             "trance_test_{}",
@@ -163,9 +163,10 @@ mod tests {
         ));
         std::fs::create_dir_all(&temp_dir).unwrap();
 
-        // Set APPDATA to redirect LocalConfig load/save
+        // Set environment variables to redirect LocalConfig load/save
         unsafe {
             std::env::set_var("APPDATA", &temp_dir);
+            std::env::set_var("XDG_CONFIG_HOME", &temp_dir);
         }
 
         let config = LocalConfig {

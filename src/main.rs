@@ -4,56 +4,125 @@
 
 #![deny(unsafe_op_in_unsafe_fn)]
 #![warn(missing_docs)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(unexpected_cfgs)]
 
+#[macro_use]
+mod logger;
 mod app;
 mod backend;
+mod bootstrap;
+mod bootstrap_guards;
+mod chrome;
+mod clipboard;
 mod config;
 mod doctor;
 mod theme;
 mod ui;
+mod utils;
 mod win32;
+mod win32_relaunch;
+
+#[cfg(test)]
+mod tests_perf;
 
 use std::path::PathBuf;
-
-use clap::{Parser, Subcommand};
-use tracing::{error, info};
-use tracing_subscriber::EnvFilter;
-use tracing_appender::non_blocking::WorkerGuard;
 use crate::config::LocalConfig;
 
-/// Screen saver management for Windows.
-#[derive(Parser, Debug)]
-#[command(
-    name = "trance",
-    version,
-    about,
-    long_about = None,
-    after_help = "ENVIRONMENT VARIABLES:\n  RUST_LOG  Set log level (error, warn, info, debug, trace)\n  NO_COLOR  Disable UI color rendering"
-)]
+#[derive(Debug)]
 struct Cli {
-    /// Force UI theme: dark, light, high-contrast, no-color
-    #[arg(long, value_name = "THEME")]
     theme: Option<String>,
-
-    #[command(subcommand)]
     command: Option<Command>,
 }
-#[derive(Subcommand, Debug)]
+
+#[derive(Debug)]
 enum Command {
-    /// Launch the app dashboard (default).
     Ui,
-    /// Check system configuration and diagnostic reports.
-    Doctor {
-        /// Attempt to fix any discovered issues automatically.
-        #[arg(long)]
-        fix: bool,
-    },
+    Doctor { fix: bool },
+}
+
+fn parse_args() -> Result<Cli, String> {
+    let mut args = std::env::args().skip(1);
+    let mut theme = None;
+    let mut cmd_str = None;
+    let mut fix = false;
+
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--theme" => {
+                if let Some(val) = args.next() {
+                    theme = Some(val);
+                } else {
+                    return Err("Error: --theme requires a value".into());
+                }
+            }
+            "-h" | "--help" => {
+                print_help();
+                std::process::exit(0);
+            }
+            "-V" | "--version" => {
+                println!("trance {}", env!("CARGO_PKG_VERSION"));
+                std::process::exit(0);
+            }
+            "ui" => {
+                cmd_str = Some("ui");
+            }
+            "doctor" => {
+                cmd_str = Some("doctor");
+            }
+            "--fix" => {
+                fix = true;
+            }
+            other => {
+                if other.starts_with("--theme=") {
+                    theme = Some(other["--theme=".len()..].to_string());
+                } else {
+                    return Err(format!("Error: unexpected argument '{}'", other));
+                }
+            }
+        }
+    }
+
+    let command = match cmd_str {
+        Some("ui") => Some(Command::Ui),
+        Some("doctor") => Some(Command::Doctor { fix }),
+        _ => None,
+    };
+
+    Ok(Cli { theme, command })
+}
+
+fn print_help() {
+    println!("trance — Windows Screensaver Manager");
+    println!();
+    println!("USAGE:");
+    println!("  trance [OPTIONS] [SUBCOMMAND]");
+    println!();
+    println!("OPTIONS:");
+    println!("  --theme <THEME>   Force UI theme: dark, light, high-contrast, no-color");
+    println!("  -h, --help        Print help");
+    println!("  -V, --version     Print version");
+    println!();
+    println!("SUBCOMMANDS:");
+    println!("  ui                Launch the app dashboard (default)");
+    println!("  doctor [--fix]    Check system configuration and diagnostic reports");
+    println!();
+    println!("ENVIRONMENT VARIABLES:");
+    println!("  RUST_LOG  Set log level (error, warn, info, debug, trace)");
+    println!("  NO_COLOR  Disable UI color rendering");
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let _guard = init_tracing();
-    let cli = Cli::parse();
-    info!(?cli, "trance start");
+    let cli = match parse_args() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    };
+    info!("trance start: {:?}", cli);
 
     let command = cli.command.unwrap_or(Command::Ui);
     let result: Result<(), Box<dyn std::error::Error>> = match command {
@@ -62,34 +131,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     if let Err(ref e) = result {
-        error!(error = %e, "trance failed");
+        error!("trance failed: {}", e);
     }
     result
 }
 
-/// Initialize a file-based tracing subscriber so logs don't interfere with
-/// the UI.
-fn init_tracing() -> WorkerGuard {
-    let log_path = LocalConfig::config_path()
-        .and_then(|p| p.parent().map(|p| p.join("trance.log")))
-        .unwrap_or_else(|| PathBuf::from("trance.log"));
-    if let Some(parent) = log_path.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    let file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-        .ok();
-    let (writer, guard) = match file {
-        Some(f) => tracing_appender::non_blocking(f),
-        None => tracing_appender::non_blocking(std::io::sink()),
-    };
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_writer(writer)
-        .with_ansi(false)
-        .try_init();
-    guard
-}

@@ -6,11 +6,12 @@ use crate::config::{GlobalConfig, LocalConfig};
 use crate::backend::preview::Screensaver;
 use crate::theme::TuiTheme;
 
-use crate::backend::preview;
-
 pub mod actions;
 pub mod markdown;
 pub mod keys;
+pub mod helpers;
+#[cfg(test)]
+pub mod tests;
 
 pub use crossterm::event::{KeyCode, KeyModifiers};
 
@@ -62,8 +63,6 @@ pub enum StatusKind {
     /// Error status.
     Error,
 }
-
-
 
 /// Status message displayed on the console status bar.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,235 +178,11 @@ impl App {
             drag_active: false,
             drag_start_cursor: None,
             drag_start_window: None,
-            username: std::env::var("USERNAME").unwrap_or_else(|_| std::env::var("USER").unwrap_or_else(|_| "user".to_string())),
-            hostname: std::env::var("COMPUTERNAME").unwrap_or_else(|_| "localhost".to_string()),
+            username: crate::backend::identity::username(),
+            hostname: crate::backend::identity::hostname(),
             os_version: crate::win32::query_os_version(),
         };
         app.update_list_items();
         app
-    }
-
-    /// Indices into `self.screensavers` that match the current filter.
-    pub fn filtered_indices(&self) -> Vec<usize> {
-        let indices: Vec<usize> = (0..self.screensavers.len()).collect();
-        if self.local.hide_stock {
-            indices
-                .into_iter()
-                .filter(|&i| !preview::is_stock_screensaver(&self.screensavers[i].path))
-                .collect()
-        } else {
-            indices
-        }
-    }
-
-    /// Map a position in the filtered list to the real index, clamping.
-    pub fn resolve_highlight(&mut self) {
-        let indices = self.filtered_indices();
-        if indices.is_empty() {
-            self.highlighted = 0;
-            return;
-        }
-        if let Some(pos) = indices.iter().position(|&i| i == self.highlighted) {
-            self.highlighted = indices[pos];
-        } else {
-            self.highlighted = indices[0];
-        }
-    }
-
-    /// Update the cached ListItem widgets in `self.list_items`.
-    pub fn update_list_items(&mut self) {
-        let theme = self.theme;
-        let active_scr_path = self.global.active_scr.clone();
-        let is_global_active = self.global.active;
-        self.list_items = self
-            .screensavers
-            .iter()
-            .map(|s| {
-                let s_path_str = s.path.to_string_lossy().into_owned();
-                let is_checked = is_global_active && active_scr_path == s_path_str;
-                let is_stock = preview::is_stock_screensaver(&s.path);
-
-                let active_str = if is_checked { "yes" } else { "no" };
-                let active_color = if is_checked { theme.applied } else { theme.text_dim };
-
-                let name = crate::ui::truncate(&s.name, 28);
-                let name_str = format!("{:<30}  ", name);
-                let name_color = if is_checked {
-                    theme.text_main
-                } else {
-                    theme.text_dim
-                };
-
-                let type_str = if is_stock {
-                    "Stock"
-                } else {
-                    "Custom"
-                };
-                let type_color = if is_stock {
-                    theme.text_dim
-                } else {
-                    theme.accent_secondary
-                };
-
-                let spans = vec![
-                    ratatui::text::Span::styled(
-                        format!("{:<8}  ", active_str),
-                        ratatui::style::Style::default().fg(active_color),
-                    ),
-                    ratatui::text::Span::styled(
-                        name_str,
-                        ratatui::style::Style::default().fg(name_color),
-                    ),
-                    ratatui::text::Span::styled(
-                        type_str.to_string(),
-                        ratatui::style::Style::default().fg(type_color),
-                    ),
-                ];
-                ratatui::widgets::ListItem::new(ratatui::text::Line::from(spans))
-            })
-            .collect();
-    }
-
-    /// Return the currently highlighted screensaver object.
-    pub fn current_screensaver(&self) -> Option<&Screensaver> {
-        self.screensavers.get(self.highlighted)
-    }
-
-    /// Load and open an embedded markdown document in the viewer modal.
-    pub fn open_embedded_markdown(&mut self, title: &str, content: &str) {
-        self.markdown_lines = markdown::parse_markdown_to_lines(content, &self.theme);
-        self.show_markdown = Some(title.to_string());
-        self.markdown_scroll = 0;
-        self.status = Some(StatusMessage {
-            text: format!("Opened document: {}", title),
-            kind: StatusKind::Info,
-        });
-    }
-
-    /// Checks system power status periodically and adjusts throttling state.
-    pub fn sync_power_status_if_needed(&mut self) {
-        if self.last_power_check.elapsed() > std::time::Duration::from_millis(5000) {
-            self.last_power_check = std::time::Instant::now();
-            let power = crate::win32::query_power_status();
-            let current_on_battery = !power.ac_online;
-            if current_on_battery != self.on_battery {
-                self.on_battery = current_on_battery;
-                let state = if current_on_battery {
-                    "Battery (Power-Saving Throttling Enabled)"
-                } else {
-                    "AC Power (Full Speed)"
-                };
-                tracing::info!("Power source changed. Status: {}", state);
-                self.status = Some(StatusMessage {
-                    text: format!("Power Source Changed: {}", state),
-                    kind: StatusKind::Info,
-                });
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-    use crate::config::GlobalConfig;
-    use crate::theme::TuiTheme;
-    use crossterm::event::KeyCode;
-
-    fn mock_app() -> App {
-        let screensavers = vec![
-            Screensaver {
-                name: "Bubbles".to_string(),
-                path: PathBuf::from("C:\\Windows\\System32\\bubbles.scr"),
-            },
-            Screensaver {
-                name: "Mystify".to_string(),
-                path: PathBuf::from("C:\\Windows\\System32\\mystify.scr"),
-            },
-            Screensaver {
-                name: "Ribbons".to_string(),
-                path: PathBuf::from("C:\\Windows\\System32\\ribbons.scr"),
-            },
-        ];
-        let global = GlobalConfig::default();
-        let local = LocalConfig::default();
-        let theme = TuiTheme::high_contrast(true);
-        App::new(screensavers, global, local, theme)
-    }
-
-    #[test]
-    fn test_filtered_indices() {
-        let mut app = mock_app();
-        assert_eq!(app.filtered_indices(), vec![0, 1, 2]);
-        app.local.hide_stock = true;
-        assert_eq!(app.filtered_indices(), Vec::<usize>::new());
-    }
-
-    #[test]
-    fn test_handle_key_navigation_and_focus() {
-        let mut app = mock_app();
-        assert_eq!(app.focused, FocusedSection::GlobalPrefs);
-        assert_eq!(app.global_field, GlobalField::Active);
-
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::Timeout);
-
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::PreventSleep);
-
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::HideStock);
-
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.global_field, GlobalField::Active);
-
-        app.handle_key(KeyCode::Tab, KeyModifiers::empty());
-        assert_eq!(app.focused, FocusedSection::SaverList);
-
-        assert_eq!(app.highlighted, 0);
-        app.handle_key(KeyCode::Down, KeyModifiers::empty());
-        assert_eq!(app.highlighted, 1);
-    }
-
-    #[test]
-    fn test_selection_and_apply() {
-        let _lock = crate::config::TEST_LOCK.lock().unwrap();
-        let temp_dir = std::env::temp_dir().join(format!(
-            "trance_test_app_{}",
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_micros()
-        ));
-        std::fs::create_dir_all(&temp_dir).unwrap();
-
-        unsafe {
-            std::env::set_var("APPDATA", &temp_dir);
-        }
-
-        let mut app = mock_app();
-
-        app.focused = FocusedSection::SaverList;
-
-        assert_eq!(app.global.active_scr, "");
-
-        app.handle_key(KeyCode::Enter, KeyModifiers::empty());
-        assert_eq!(app.global.active_scr, "C:\\Windows\\System32\\bubbles.scr");
-
-        let _ = std::fs::remove_dir_all(&temp_dir);
-    }
-
-    #[test]
-    fn test_console_modes() {
-        println!("TESTING RAW MODES:");
-        match crossterm::terminal::enable_raw_mode() {
-            Ok(_) => println!("  enable_raw_mode: OK"),
-            Err(e) => println!("  enable_raw_mode: ERROR: {}", e),
-        }
-        match crossterm::terminal::disable_raw_mode() {
-            Ok(_) => println!("  disable_raw_mode: OK"),
-            Err(e) => println!("  disable_raw_mode: ERROR: {}", e),
-        }
     }
 }
