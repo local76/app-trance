@@ -60,7 +60,7 @@ strip = true             # Strip symbols and debuginfo
 
 [package.metadata.generate-rpm]
 name = "app-trance"
-version = "2026.6.10-1"
+version = "2026.6.10.1"
 release = "1"
 arch = "x86_64"
 summary = "Windows screensaver manager"
